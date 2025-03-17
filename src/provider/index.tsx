@@ -1,16 +1,36 @@
-"use client"
+"use client";
+import { SessionProvider } from "next-auth/react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ReactNode } from "react";
 
-import * as React from "react"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { SessionProvider } from "next-auth/react"
+interface ThemeProviderProps {
+  children: ReactNode;
+  attribute?: string;
+  defaultTheme?: string;
+  enableSystem?: boolean;
+  themes?: string[];
+  disableTransitionOnChange?: boolean;
+}
 
 export function ThemeProvider({
   children,
-  ...props
-}: React.ComponentProps<typeof NextThemesProvider>) {
-  return <NextThemesProvider {...props}>
+  attribute = "data-theme", // Changed from "class" to "data-theme"
+  defaultTheme = "system",
+  enableSystem = true,
+  themes = ['light', 'dark', 'system', 'dimmed', 'neon', 'sepia', 'solarized', 'dracula', 'synthwave', 'retro', 'lava', 'glacier','pastel', 'midnight', 'forest','cyberpunk', 'valentine', 'halloween', 'garden', 'beach', 'forest', 'aqua', 'lofi', 'pastel', 'fantasy', 'wireframe', 'black', 'luxury', 'dracula', 'retro', 'cyberpunk',],
+  disableTransitionOnChange = false,
+}: ThemeProviderProps) {
+  return (
     <SessionProvider>
-    {children}
-    </SessionProvider>
+    <NextThemesProvider
+      attribute={attribute}
+      defaultTheme={defaultTheme}
+      enableSystem={enableSystem}
+      themes={themes}
+      disableTransitionOnChange={disableTransitionOnChange}
+    >
+      {children}
     </NextThemesProvider>
+    </SessionProvider>
+  );
 }

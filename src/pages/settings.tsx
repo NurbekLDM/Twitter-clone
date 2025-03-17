@@ -14,6 +14,10 @@ import {
   KeyRound,
   Globe,
   Monitor,
+  BookOpen,
+  Zap,
+  MoonStar,
+  SunDim
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -46,6 +50,7 @@ const Settings = () => {
       message: "Passwords don't match",
       path: ["confirmPassword"],
     });
+    
 
   const form = useForm({
     resolver: zodResolver(passwordSchema),
@@ -63,21 +68,21 @@ const Settings = () => {
   return (
     <div className="min-h-screen flex flex-col p-4">
       <div className="mb-8 flex items-center">
-        <h1 className="text-2xl ml-12 font-bold flex items-center dark:text-white">
+        <h1 className="text-2xl ml-12 font-bold flex items-center">
           <SettingsIcon className="mr-2 h-6 w-6" /> Settings
         </h1>
       </div>
 
-      <div className="glass-card p-6 flex-grow dark:bg-gray-900 dark:text-white">
+      <div className="glass-card text-black p-6 flex-grow dark:bg-gray-900 dark:text-white">
         <Tabs defaultValue="appearance" className="flex flex-col md:flex-row gap-6">
           <TabsList className="md:flex-col h-auto justify-start mb-4 md:mb-0 md:mr-8 md:h-auto md:w-48 p-2">
-            <TabsTrigger value="appearance" className="w-full justify-start gap-2 mb-1">
-              <Moon className="h-4 w-4" /> <span>Appearance</span>
+            <TabsTrigger value="appearance" className="w-full text-black dark:text-white justify-start gap-2 mb-1">
+              <Moon className="h-4 w-4 text-black dark:text-white" /> <span>Appearance</span>
             </TabsTrigger>
-            <TabsTrigger value="password" className="w-full justify-start gap-2 mb-1">
+            <TabsTrigger value="password" className="w-full text-black dark:text-white justify-start gap-2 mb-1">
               <KeyRound className="h-4 w-4" /> <span>Password</span>
             </TabsTrigger>
-            <TabsTrigger value="language" className="w-full justify-start gap-2">
+            <TabsTrigger value="language" className="w-full  text-black dark:text-white justify-start gap-2">
               <Globe className="h-4 w-4" /> <span>Language</span>
             </TabsTrigger>
           </TabsList>
@@ -85,24 +90,30 @@ const Settings = () => {
           <div className="flex-grow">
             {/* Appearance Section */}
             <TabsContent value="appearance">
-              <h2 className="text-xl font-semibold">Appearance</h2>
+              <h2 className="text-xl text-black dark:text-white font-semibold">Appearance</h2>
               <p>Choose how the application looks to you</p>
               <div>
-                <Label>Mode</Label>
+                <Label className="text-black dark:text-white">Mode</Label>
                 <ToggleGroup
                   type="single"
                   value={theme}
                   onValueChange={(value) => value && setTheme(value)}
                   className="mt-2 justify-start"
                 >
-                  <ToggleGroupItem value="light">
-                    <Sun className="h-4 w-4 mr-2" /> Light
+                  <ToggleGroupItem className="text-black dark:text-white" value="light">
+                    <Sun className="h-4  w-4 mr-2" /> Light
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="dark">
+                  <ToggleGroupItem className="text-black dark:text-white" value="dark">
                     <Moon className="h-4 w-4 mr-2" /> Dark
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="system">
+                  <ToggleGroupItem className="text-black dark:text-white" value="system">
                     <Monitor className="h-4 w-4 mr-2" /> System
+                  </ToggleGroupItem>
+                  <ToggleGroupItem className="text-black dark:text-white" value="sepia">
+                    <BookOpen className="h-4 w-4 mr-2" /> Sepia
+                  </ToggleGroupItem>
+                  <ToggleGroupItem className="text-black dark:text-white" value="neon">
+                    <Zap color="#39ff14" className="h-4 w-4 mr-2" /> Neon
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
@@ -110,8 +121,8 @@ const Settings = () => {
 
             {/* Password Section */}
             <TabsContent value="password">
-              <h2 className="text-xl font-semibold">Password</h2>
-              <p>Update your password</p>
+              <h2 className="text-xl text-black dark:text-white font-semibold">Password</h2>
+              <p className="text-black dark:text-white">Update your password</p>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
@@ -119,9 +130,9 @@ const Settings = () => {
                     name="currentPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Current Password</FormLabel>
+                        <FormLabel className="text-black dark:text-white">Current Password</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} />
+                          <Input className="text-black dark:text-white" type="password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -132,9 +143,9 @@ const Settings = () => {
                     name="newPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>New Password</FormLabel>
+                        <FormLabel className="text-black dark:text-white">New Password</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} />
+                          <Input className="text-black dark:text-white" type="password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -145,15 +156,15 @@ const Settings = () => {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Confirm New Password</FormLabel>
+                        <FormLabel className="text-black dark:text-white">Confirm New Password</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} />
+                          <Input className="text-black dark:text-white" type="password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="bg-blue-500 text-white">
+                  <Button type="submit" className="bg-blue dark:bg-slate-600 text-white">
                     Update Password
                   </Button>
                 </form>
@@ -162,15 +173,15 @@ const Settings = () => {
 
             {/* Language Section */}
             <TabsContent value="language">
-              <h2 className="text-xl font-semibold">Language</h2>
+              <h2 className="text-xl text-black dark:text-white font-semibold">Language</h2>
            
               <div className="mt-4 space-y-2">
-                <Label>Choose Language</Label>
+                <Label className="text-black dark:text-white">Choose Language</Label>
                 <ToggleGroup
                   type="single"
                   value={language}
                   onValueChange={(value) => value && setLanguage(value)}
-                  className="mt-2 justify-start"
+                  className="mt-2 text-black dark:text-white justify-start"
                 >
                   <ToggleGroupItem value="english">
                     🇬🇧 English

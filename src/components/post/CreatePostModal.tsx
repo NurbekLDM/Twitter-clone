@@ -95,9 +95,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ onSubmit }) => {
           Create Post
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-xl">
+      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white dark:bg-white rounded-xl">
         <DialogHeader className="p-4 border-b">
-          <DialogTitle className="text-center text-black">Create New Post</DialogTitle>
+          <DialogTitle className="text-center dark:text-black">Create New Post</DialogTitle>
         </DialogHeader>
         
         <div className="p-6 space-y-4">
@@ -116,7 +116,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ onSubmit }) => {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="What's happening?"
-              className="flex-1 resize-none border-none shadow-none focus-visible:ring-0 p-0 min-h-[120px] text-base"
+              className="flex-1 resize-none dark:text-black    border-none shadow-none focus-visible:ring-0 p-0 min-h-[120px] text-base"
               maxLength={280}
             />
           </div>

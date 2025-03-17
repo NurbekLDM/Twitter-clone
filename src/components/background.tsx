@@ -12,7 +12,7 @@ export default function Background() {
             <span className="">Exploding beams.</span>
           </div>
           <div className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
-            <span className="">Exploding beams.</span>
+            <span className="text-black dark:text-lime">Exploding beams.</span>
 
           </div>
              <Link href="/home">

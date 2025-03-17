@@ -2,18 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-
 .no-visible-scrollbar {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .no-visible-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  
-@layer components{
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.no-visible-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@layer components {
   .post-card {
     @apply glass-card p-6 mb-4 transition-all duration-300 overflow-hidden;
     transform-origin: center top;
@@ -23,6 +22,7 @@
     @apply shadow-md;
     transform: translateY(-2px);
   }
+  
   .profile-picture-container {
     @apply relative rounded-full overflow-hidden border-2 border-white shadow-md transition-transform duration-300;
   }
@@ -64,7 +64,8 @@
   .text-balance {
     text-wrap: balance;
   }
-  .glass-card{
+  
+  .glass-card {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border-radius: 10px;
@@ -72,4 +73,165 @@
     box-shadow: 0 8px 20px 0 rgba(31, 38, 135, 0.37);
     color: rgba(255, 255, 255, 0.7);
   }
+  
+  /* Dark mode glass card */
+  .dark .glass-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Theme implementations */
+/* Default light theme */
+:root {
+  --bg-primary: #ffffff;
+  --text-primary: #000000;
+}
+
+/* Default dark theme */
+.dark {
+  --bg-primary: #000000;
+  --text-primary: #ffffff;
+}
+
+[data-theme="dimmed"] {
+  --bg-color: #e5e5e5;
+  --text-color: #222222;
+  --border-color: #bbbbbb;
+}
+
+[data-theme="neon"] {
+  --bg-color: #000000;
+  --text-color: #00ffff;
+  --border-color: #ff00ff;
+}
+
+[data-theme="sepia"] {
+  --bg-color: #f5e1c0;
+  --text-color: #4a2c2a;
+  --border-color: #8b5a2b;
+}
+
+[data-theme="solarized"] {
+  --bg-color: #fdf6e3;
+  --text-color: #073642;
+  --border-color: #586e75;
+}
+
+[data-theme="dracula"] {
+  --bg-color: #282a36;
+  --text-color: #f8f8f2;
+  --border-color: #6272a4;
+}
+
+[data-theme="synthwave"] {
+  --bg-color: #2d0634;
+  --text-color: #ff77a8;
+  --border-color: #f5c5f8;
+}
+
+[data-theme="retro"] {
+  --bg-color: #4A148C;
+  --text-color: #FF4081;
+  --border-color: #FFEB3B;
+}
+
+[data-theme="lava"] {
+  --bg-color: #4E0000;
+  --text-color: #FF9800;
+  --border-color: #D50000;
+}
+
+[data-theme="glacier"] {
+  --bg-color: #1565C0;
+  --text-color: #E3F2FD;
+  --border-color: #81D4FA;
+}
+
+[data-theme="pastel"] {
+  --bg-color: #F5F5F5;
+  --text-color: #81D4FA;
+  --border-color: #F8BBD0;
+}
+
+[data-theme="midnight"] {
+  --bg-color: #0D47A1;
+  --text-color: #ffffff;
+  --border-color: #B0BEC5;
+}
+
+[data-theme="forest"] {
+  --bg-color: #1B5E20;
+  --text-color: #A5D6A7;
+  --border-color: #5D4037;
+}
+
+[data-theme="cyberpunk"] {
+  --bg-color: #000000;
+  --text-color: #00eaff;
+  --border-color: #39ff14;
+}
+
+[data-theme="valentine"] {
+  --bg-color: #ffcbdb;
+  --text-color: #d81b60;
+  --border-color: #880e4f;
+}
+
+[data-theme="halloween"] {
+  --bg-color: #3E2723;
+  --text-color: #FF6F00;
+  --border-color: #DD2C00;
+}
+
+[data-theme="garden"] {
+  --bg-color: #388E3C;
+  --text-color: #C8E6C9;
+  --border-color: #4CAF50;
+}
+
+[data-theme="beach"] {
+  --bg-color: #ffebcd;
+  --text-color: #ff4500;
+  --border-color: #ffa500;
+}
+
+[data-theme="aqua"] {
+  --bg-color: #00FFFF;
+  --text-color: #008B8B;
+  --border-color: #20B2AA;
+}
+
+[data-theme="lofi"] {
+  --bg-color: #F5F5F5;
+  --text-color: #333333;
+  --border-color: #666666;
+}
+
+[data-theme="fantasy"] {
+  --bg-color: #8E44AD;
+  --text-color: #ECF0F1;
+  --border-color: #9B59B6;
+}
+
+[data-theme="wireframe"] {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --border-color: #cccccc;
+}
+
+
+[data-theme="luxury"] {
+  --bg-color: #1A1A1D;
+  --text-color: #D4AF37;
+  --border-color: #A67C00;
+}
+
+
+/* Apply the theme colors to elements */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

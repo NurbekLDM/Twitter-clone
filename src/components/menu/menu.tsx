@@ -88,13 +88,14 @@ const IconContainer = ({ mouseX, title, icon, href }) => {
   const [hovered, setHovered] = useState(false);
 
   return (
+
     <Link href={href} passHref>
       <motion.div
         ref={ref}
         style={{ width: size, height: size }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="aspect-square rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center relative"
+        className="aspect-square rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center relative"
       >
         <AnimatePresence>
           {hovered && (
@@ -113,6 +114,7 @@ const IconContainer = ({ mouseX, title, icon, href }) => {
         </motion.div>
       </motion.div>
     </Link>
+
   );
 };
 

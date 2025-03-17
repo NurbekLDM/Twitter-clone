@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import Head from "next/head";
 import { useSession } from "next-auth/react";

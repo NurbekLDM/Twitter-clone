@@ -8,18 +8,21 @@ interface ProfileHeaderProps {
   initialUsername: string;
   initialFullName: string;
   initialProfilePicture: string;
+  initialBio: string; // Bio uchun yangi prop
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   initialUsername,
   initialFullName,
-  initialProfilePicture
+  initialProfilePicture,
+  initialBio = '' // Default qiymat bo'sh string
 }) => {
   const [profileData, setProfileData] = useState({
     username: initialUsername,
     fullName: initialFullName,
     profilePicture: initialProfilePicture,
-    editingField: null as 'username' | 'fullName' | null
+    bio: initialBio, // Bio maydoni uchun state
+    editingField: null as 'username' | 'fullName' | 'bio' | null // Bio tahrirlash uchun qo'shimcha
   });
 
   const { toast } = useToast();
@@ -37,18 +40,21 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     }
   };
 
-  const handleEditClick = (field: 'username' | 'fullName') => {
+  const handleEditClick = (field: 'username' | 'fullName' | 'bio') => {
     setProfileData((prev) => ({ ...prev, editingField: field }));
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { value } = e.target;
     setProfileData((prev) => ({ ...prev, [prev.editingField as string]: value }));
   };
 
   const handleSave = () => {
+    const fieldName = profileData.editingField === 'username' ? 'Username' : 
+                      profileData.editingField === 'fullName' ? 'Full name' : 'Bio';
+    
     toast({
-      title: `${profileData.editingField === 'username' ? 'Username' : 'Full name'} updated`,
+      title: `${fieldName} updated`,
       description: `Your ${profileData.editingField} has been successfully updated.`,
     });
     setProfileData((prev) => ({ ...prev, editingField: null }));
@@ -141,6 +147,40 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   <Pencil className="h-3 w-3" />
                 </Button>
               </>
+            )}
+          </div>
+
+          {/* Bio Field - Yangi qo'shilgan */}
+          <div className="w-full">
+            {profileData.editingField === 'bio' ? (
+              <div className="flex flex-col gap-2 items-center md:items-start">
+                <textarea
+                  value={profileData.bio}
+                  onChange={handleInputChange}
+                  placeholder="Write something about yourself..."
+                  className="w-full p-2 text-sm border rounded focus:outline-none bg-transparent resize-none min-h-20"
+                  autoFocus
+                />
+                <div className="flex gap-2 justify-center md:justify-start">
+                  <Button size="sm" variant="outline" onClick={handleSave} className="h-8" aria-label="Save bio">
+                    <Check className="h-4 w-4 mr-1" /> Save
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={handleCancel} className="h-8" aria-label="Cancel bio edit">
+                    <X className="h-4 w-4 mr-1" /> Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1 items-center md:items-start">
+                {profileData.bio ? (
+                  <p className="text-sm max-w-md">{profileData.bio}</p>
+                ) : (
+                  <p className="text-sm text-gray italic">No bio added yet.</p>
+                )}
+                <Button variant="ghost" onClick={() => handleEditClick('bio')} size="sm" className="h-7" aria-label="Edit bio">
+                  <Pencil className="h-3 w-3 mr-1" /> {profileData.bio ? 'Edit' : 'Add'} bio
+                </Button>
+              </div>
             )}
           </div>
 

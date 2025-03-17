@@ -12,6 +12,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       attribute="class"
       defaultTheme="system"
       enableSystem
+      themes={['light', 'dark', 'system', 'dimmed', 'neon' , 'sepia', 'solarized']}
       disableTransitionOnChange
     >
 

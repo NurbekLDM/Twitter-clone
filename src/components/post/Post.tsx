@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Repeat2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Repeat2, Bookmark } from "lucide-react";
 import Image from 'next/image';
 
 export interface PostProps {
@@ -13,9 +13,12 @@ export interface PostProps {
   likes: number;
   comments: number;
   reposts: number;
+  bookmarked?: boolean; // Added bookmarked property
+  onBookmark?: (id: number) => void; // Added callback for bookmark action
 }
 
 const Post: React.FC<PostProps> = ({
+  id,
   username,
   fullName,
   profilePicture,
@@ -24,11 +27,14 @@ const Post: React.FC<PostProps> = ({
   timestamp,
   likes: initialLikes,
   comments,
-  reposts
+  reposts,
+  bookmarked: initialBookmarked = false,
+  onBookmark
 }) => {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(initialLikes);
-  
+  const [bookmarked, setBookmarked] = useState(initialBookmarked);
+ 
   const toggleLike = () => {
     if (liked) {
       setLikes(likes - 1);
@@ -38,12 +44,20 @@ const Post: React.FC<PostProps> = ({
     setLiked(!liked);
   };
 
+  const toggleBookmark = () => {
+    setBookmarked(!bookmarked);
+    // Call the parent component's handler if provided
+    if (onBookmark) {
+      onBookmark(id);
+    }
+  };
+
   return (
-    <div className="post-card animate-slide-up">
+    <div className="post-card text-black dark:text-white  animate-slide-up">
       <div className="flex gap-4">
         <div className="flex-shrink-0">
-          <Image 
-            src={profilePicture} 
+          <Image
+            src={profilePicture}
             alt={`${username}'s profile`}
             width={48}
             height={48}
@@ -58,38 +72,50 @@ const Post: React.FC<PostProps> = ({
             <span className="text-gray text-sm">{timestamp}</span>
           </div>
           <p className="mb-4">{content}</p>
-          
+         
           {image && (
             <div className="mb-4 rounded-xl overflow-hidden">
-              <img 
-                src={image} 
-                alt="Post content" 
+              <Image
+                width={300}
+                height={300}
+                src={image}
+                alt="Post content"
                 className="w-full h-auto object-cover rounded-xl shadow-sm transition-all duration-300 hover:shadow-md"
               />
             </div>
           )}
-          
+         
           <div className="flex justify-between text-gray">
-            <button 
+            <button
               className="flex items-center gap-1 group"
               onClick={toggleLike}
             >
-              <Heart 
-                className={`h-5 w-5 group-hover:text-red transition-colors ${liked ? 'text-red fill-red' : ''}`} 
+              <Heart
+                className={`h-5 w-5 group-hover:text-red transition-colors ${liked ? 'text-red fill-red' : ''}`}
               />
               <span>{likes}</span>
             </button>
-            
+           
             <button className="flex items-center gap-1 group">
               <MessageCircle className="h-5 w-5 group-hover:text-blue transition-colors" />
               <span>{comments}</span>
             </button>
-            
+           
             <button className="flex items-center gap-1 group">
               <Repeat2 className="h-5 w-5 group-hover:text-green transition-colors" />
               <span>{reposts}</span>
             </button>
-            
+           
+            <button 
+              className="flex items-center gap-1 group"
+              onClick={toggleBookmark}
+            >
+              <Bookmark 
+                className={`h-5 w-5 group-hover:text-blue transition-colors ${bookmarked ? 'text-blue fill-blue' : ''}`} 
+              />
+              <span>Save</span>
+            </button>
+           
             <button className="flex items-center gap-1 group">
               <Share2 className="h-5 w-5 group-hover:text-blue transition-colors" />
             </button>

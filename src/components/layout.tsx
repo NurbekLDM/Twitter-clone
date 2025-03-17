@@ -1,8 +1,6 @@
 import "../styles/globals.css";
 import { ReactNode } from "react";
-import { ThemeProvider } from "@/provider";
 import Head from "next/head";
-import MenuSection from "./menu/menu";
 
 export default function RootLayout({
   children,
@@ -16,16 +14,7 @@ export default function RootLayout({
         <meta name="description" content="Twitter clone app" />
       </Head>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-         <main> {children} </main>
-
-
-        </ThemeProvider>
+        <main className="transition-colors duration-300">{children}</main>
       </body>
     </html>
   );

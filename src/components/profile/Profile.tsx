@@ -6,6 +6,7 @@ const initialProfile = {
   username: 'johndoe',
   fullName: 'John Doe',
   profilePicture: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=2070&auto=format&fit=crop',
+  bio: 'Designer, Developer, and Creator.'
 };
 
 const initialPosts: PostProps[] = [
@@ -70,7 +71,12 @@ const ProfileComponent = () => {
   return (
     <div className="min-h-screen ">
       <div className="container max-w-3xl px-4 py-12">
-        <ProfileHeader {...initialProfile} />
+      <ProfileHeader 
+  initialUsername={initialProfile.username}
+  initialFullName={initialProfile.fullName}
+  initialProfilePicture={initialProfile.profilePicture}
+  initialBio={initialProfile.bio}
+/>
 
         <div className="mb-4">
           <h2 className="text-xl font-bold mb-4 animate-fade-in">Posts</h2>
