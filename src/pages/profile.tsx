@@ -7,7 +7,7 @@ export default function Profile() {
         <div>
 
         <ProfileComponent />
-                 <div className="fixed bottom-5 sm:bottom-6">
+                 <div className="fixed sm:left-1/3 bottom-5 sm:bottom-6">
                 <MenuSection  />
                 </div>
         </div>

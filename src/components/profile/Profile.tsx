@@ -69,8 +69,8 @@ const ProfileComponent = () => {
   }, []);
 
   return (
-    <div className="min-h-screen ">
-      <div className="container max-w-3xl px-4 py-12">
+    <div className="min-h-screen mx-auto ">
+      <div className="container mx-auto max-w-3xl px-4 py-12">
       <ProfileHeader 
   initialUsername={initialProfile.username}
   initialFullName={initialProfile.fullName}

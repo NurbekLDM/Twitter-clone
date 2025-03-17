@@ -66,8 +66,8 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col p-4">
-      <div className="mb-8 flex items-center">
+    <div className="sm:min-h-screen h-fit  min-w-fit flex flex-col p-4">
+      <div className="mb-8 flex sm:py-0 py-12 items-center">
         <h1 className="text-2xl ml-12 font-bold flex items-center">
           <SettingsIcon className="mr-2 h-6 w-6" /> Settings
         </h1>
@@ -98,7 +98,7 @@ const Settings = () => {
                   type="single"
                   value={theme}
                   onValueChange={(value) => value && setTheme(value)}
-                  className="mt-2 justify-start"
+                  className="mt-2 flex sm:flex-wrap flex-wrap justify-start"
                 >
                   <ToggleGroupItem className="text-black dark:text-white" value="light">
                     <Sun className="h-4  w-4 mr-2" /> Light

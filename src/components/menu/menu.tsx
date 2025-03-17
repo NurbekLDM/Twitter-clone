@@ -30,10 +30,10 @@ const MenuSection = ({ desktopClassName, mobileClassName }) => (
 const FloatingDockMobile = ({ items, className }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className={cn("relative block md:hidden", className)}>
+    <div className={cn("relative left-2 block md:hidden", className)}>
       <AnimatePresence>
         {open && (
-          <motion.div layoutId="nav" className="absolute bg-dark-blur rounded-md w-fit bottom-full mb-2 flex flex-col gap-2">
+          <motion.div layoutId="nav" className="absolute bg-gray-900 rounded-md w-fit bottom-full mb-2 flex flex-col gap-2">
             {items.map((item, idx) => (
               <motion.div
                 key={item.title}

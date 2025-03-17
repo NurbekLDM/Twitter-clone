@@ -12,7 +12,7 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSubmit }) => {
     };
 
     return (
-        <div className="glass-card p-2  md:w-2/3 sm:w-1/3 mx-auto mt-4 animate-scale-in">
+        <div className="glass-card p-2  md:w-2/6 sm:w-2/6 mx-auto mt-4 animate-scale-in">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Image
