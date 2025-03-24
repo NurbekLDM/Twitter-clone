@@ -21,8 +21,9 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSubmit }) => {
                         src="https://source.unsplash.com/100x100/?portrait" 
                         alt="Your profile" 
                         className="w-12 h-12 rounded-full object-cover"
+                        unoptimized
                     />
-                    <p className="text-gray-500">What's happening?</p>
+                    <p className="text-gray-500">What`s happening?</p>
                 </div>
                 <CreatePostModal onSubmit={handleSubmit} />
             </div>

@@ -1,11 +1,10 @@
-import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
 
 export default function LanguageSwitcher() {
-  const { t } = useTranslation('common')
+ 
   const router = useRouter()
   
-  const changeLanguage = (locale) => {
+  const changeLanguage = (locale: string) => {
     router.push(router.pathname, router.asPath, { locale })
   }
   

@@ -1,198 +1,181 @@
-import React, { useState, useRef } from 'react';
-import Image from 'next/image';
+"use client";
+import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Camera, Check, Pencil, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import authService from "@/actions/user.action";
 
-interface ProfileHeaderProps {
-  initialUsername: string;
-  initialFullName: string;
-  initialProfilePicture: string;
-  initialBio: string; // Bio uchun yangi prop
-}
-
-const ProfileHeader: React.FC<ProfileHeaderProps> = ({
-  initialUsername,
-  initialFullName,
-  initialProfilePicture,
-  initialBio = '' // Default qiymat bo'sh string
-}) => {
-  const [profileData, setProfileData] = useState({
-    username: initialUsername,
-    fullName: initialFullName,
-    profilePicture: initialProfilePicture,
-    bio: initialBio, // Bio maydoni uchun state
-    editingField: null as 'username' | 'fullName' | 'bio' | null // Bio tahrirlash uchun qo'shimcha
+const ProfileHeader = () => {
+  const [userData, setUserData] = useState({
+    id: "",
+    username: "",
+    full_name: "",
+    profile_picture: "https://i.pravatar.cc/150?img=68",
+    bio: "",
+    followers: 0,
+    following: 0,
   });
 
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formData, setFormData] = useState({ ...userData });
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const fileInputRef = useRef(null);
+  const [previewUrl, setPreviewUrl] = useState(userData.profile_picture);
 
-  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setProfileData((prev) => ({ ...prev, profilePicture: reader.result as string }));
-        toast({ title: "Profile picture updated", description: "Your profile picture has been successfully updated." });
-      };
-      reader.readAsDataURL(file);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        const data = await authService.getUser();
+
+        if (!isMounted) return;
+
+        if (data?.user) {
+          const user = data.user;
+          const [followingResponse, followersResponse] = await Promise.all([
+            authService.getFollowingCount(user.id),
+            authService.getFollowersCount(user.id),
+          ]);
+
+          const completeUserData = {
+            ...user,
+            following: followingResponse?.followingCount || 0,
+            followers: followersResponse?.followersCount || 0,
+          };
+
+          setUserData(completeUserData);
+          setFormData(completeUserData);
+
+          setPreviewUrl(completeUserData.profile_picture);
+        }
+      } catch (error) {
+        console.log("Error fetching user data:", error);
+        toast("Error fetching user data", { style: { backgroundColor: "red" } });
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchUserData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+
+  const handleChange = (e) => {
+    const { name, value, type, files } = e.target;
+
+    if (type === "file" && files?.length > 0) {
+      const file = files[0];
+      console.log("Selected file:", file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setFormData((prev) => ({
+        ...prev,
+        profile_picture: file,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
   };
 
-  const handleEditClick = (field: 'username' | 'fullName' | 'bio') => {
-    setProfileData((prev) => ({ ...prev, editingField: field }));
-  };
+  console.log("Form data:", formData); 
+  console.log("Userdata:", userData);
+  const handleStartEditing = () => setIsEditing(true);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { value } = e.target;
-    setProfileData((prev) => ({ ...prev, [prev.editingField as string]: value }));
-  };
-
-  const handleSave = () => {
-    const fieldName = profileData.editingField === 'username' ? 'Username' : 
-                      profileData.editingField === 'fullName' ? 'Full name' : 'Bio';
-    
-    toast({
-      title: `${fieldName} updated`,
-      description: `Your ${profileData.editingField} has been successfully updated.`,
-    });
-    setProfileData((prev) => ({ ...prev, editingField: null }));
-  };
-
+  
   const handleCancel = () => {
-    setProfileData((prev) => ({ ...prev, editingField: null }));
+    setFormData(userData);
+    setPreviewUrl(userData.profile_picture);
+    setIsEditing(false);
   };
+
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+
+    try {
+      await authService.updateProfile({ ...formData, id: userData.id });
+
+      setUserData(formData);
+      toast("Profile updated successfully", { style: { backgroundColor: "green" } });
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      toast("Error updating profile", { style: { backgroundColor: "red" } });
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center items-center p-8">Loading profile data...</div>;
+  }
 
   return (
-    <div className="glass-card p-8 mb-8 animate-scale-in">
+    <div className="glass-card text-black p-8 mb-8 animate-scale-in">
       <div className="flex flex-col md:flex-row items-center gap-6">
-        {/* Profile Picture Section */}
+        {/* Profile Picture */}
         <div className="relative w-32 h-32 md:w-40 md:h-40 group">
-          <Image 
-            src={profileData.profilePicture} 
-            alt="Profile" 
-            width={160}
-            height={160}
-            className="w-full h-full object-cover rounded-full"
-          />
-          <div 
-            className="absolute inset-0 rounded-full flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Camera className="w-8  h-8 text-white" />
-          </div>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept="image/*" 
-            onChange={handleProfilePictureChange} 
-          />
+          <Image src={previewUrl} alt="Profile" width={160} height={160} className="w-full h-full object-cover rounded-full" />
+          {isEditing && (
+            <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              <Camera className="w-8 h-8 text-white" />
+            </div>
+          )}
+          <input type="file" ref={fileInputRef} name="profile_picture" className="hidden" accept="image/*" onChange={handleChange} />
         </div>
 
-        {/* Profile Information Section */}
-        <div className="flex-1 space-y-4 text-center md:text-left">
-          {/* Full Name Field */}
-          <div className="flex items-center gap-2 justify-center md:justify-start">
-            {profileData.editingField === 'fullName' ? (
-              <>
-                <input
-                  type="text"
-                  value={profileData.fullName}
-                  onChange={handleInputChange}
-                  className="text-2xl md:text-3xl font-bold border-b-2 border-blue focus:outline-none bg-transparent"
-                  autoFocus
-                />
-                <Button size="icon" variant="ghost" onClick={handleSave} className="h-8 w-8" aria-label="Save full name">
-                  <Check className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="ghost" onClick={handleCancel} className="h-8 w-8" aria-label="Cancel full name edit">
-                  <X className="h-4 w-4" />
-                </Button>
-              </>
-            ) : (
-              <>
-                <h1 className="text-2xl md:text-3xl font-bold">{profileData.fullName}</h1>
-                <Button size="icon" variant="ghost" onClick={() => handleEditClick('fullName')} className="h-8 w-8" aria-label="Edit full name">
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
-
-          {/* Username Field */}
-          <div className="flex items-center gap-2 justify-center md:justify-start">
-            {profileData.editingField === 'username' ? (
-              <>
-                <span className="text-gray">@</span>
-                <input
-                  type="text"
-                  value={profileData.username}
-                  onChange={handleInputChange}
-                  className="text-lg text-gray border-b-2 border-blue focus:outline-none bg-transparent"
-                  autoFocus
-                />
-                <Button size="icon" variant="ghost" onClick={handleSave} className="h-7 w-7" aria-label="Save username">
-                  <Check className="h-3 w-3" />
-                </Button>
-                <Button size="icon" variant="ghost" onClick={handleCancel} className="h-7 w-7" aria-label="Cancel username edit">
-                  <X className="h-3 w-3" />
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-lg text-gray">@{profileData.username}</p>
-                <Button size="icon" variant="ghost" onClick={() => handleEditClick('username')} className="h-7 w-7" aria-label="Edit username">
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              </>
-            )}
-          </div>
-
-          {/* Bio Field - Yangi qo'shilgan */}
-          <div className="w-full">
-            {profileData.editingField === 'bio' ? (
-              <div className="flex flex-col gap-2 items-center md:items-start">
-                <textarea
-                  value={profileData.bio}
-                  onChange={handleInputChange}
-                  placeholder="Write something about yourself..."
-                  className="w-full p-2 text-sm border rounded focus:outline-none bg-transparent resize-none min-h-20"
-                  autoFocus
-                />
-                <div className="flex gap-2 justify-center md:justify-start">
-                  <Button size="sm" variant="outline" onClick={handleSave} className="h-8" aria-label="Save bio">
-                    <Check className="h-4 w-4 mr-1" /> Save
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={handleCancel} className="h-8" aria-label="Cancel bio edit">
-                    <X className="h-4 w-4 mr-1" /> Cancel
-                  </Button>
+        {/* Profile Information */}
+        <div className="flex-1 text-center md:text-left">
+          {isEditing ? (
+            <form onSubmit={handleSave} className="space-y-4">
+              {/* Inputlar */}
+              {["full_name", "username", "bio"].map((field) => (
+                <div key={field} className="flex flex-col gap-1">
+                  <label className="text-sm font-semibold text-gray-700">{field.replace("_", " ")}</label>
+                  <input type="text" name={field} value={formData[field]} onChange={handleChange} className="text-lg border rounded-md p-2 text-black bg-white focus:ring-2 focus:ring-blue-400" />
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1 items-center md:items-start">
-                {profileData.bio ? (
-                  <p className="text-sm max-w-md">{profileData.bio}</p>
-                ) : (
-                  <p className="text-sm text-gray italic">No bio added yet.</p>
-                )}
-                <Button variant="ghost" onClick={() => handleEditClick('bio')} size="sm" className="h-7" aria-label="Edit bio">
-                  <Pencil className="h-3 w-3 mr-1" /> {profileData.bio ? 'Edit' : 'Add'} bio
-                </Button>
-              </div>
-            )}
-          </div>
+              ))}
 
-          {/* Followers and Following Section */}
-          <div className="flex gap-4 justify-center md:justify-start">
-            <div>
-              <span className="font-bold">246</span> <span className="text-gray">Following</span>
+              {/* Followers & Following */}
+              <div className="flex gap-4 justify-center md:justify-start">
+                <div><span className="font-bold text-gray-700">{userData.following}</span> <span className="text-gray-700"> Following</span></div>
+                <div><span className="font-bold text-gray-700">{userData.followers}</span> <span className="text-gray-700"> Followers</span></div>
+              </div>
+
+              {/* Tugmalar */}
+              <div className="flex gap-2 justify-center md:justify-start">
+                <Button type="submit" className="bg-green-500 dark:bg-green-600 text-black"><Check className="h-4 w-4" /> Save</Button>
+                <Button type="button" onClick={handleCancel} className="bg-red-500 text-black"><X className="h-4 w-4" /> Cancel</Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              {/* Ko‘rish Rejimi */}
+              {["full_name", "username", "bio"].map((field) => (
+                <div key={field} className="flex flex-col gap-1">
+                  <label className="text-sm font-semibold text-gray-700">{field.replace("_", " ")}</label>
+                  <div className="text-lg p-2">{userData[field]}</div>
+                </div>
+              ))}
+
+              {/* Followers & Following */}
+              <div className="flex gap-4 justify-center md:justify-start">
+                <div><span className="font-bold text-gray-700">{userData.following}</span> <span className="text-gray-700"> Following</span></div>
+                <div><span className="font-bold text-gray-700">{userData.followers}</span> <span className="text-gray-700"> Followers</span></div>
+              </div>
+
+              {/* Edit Button */}
+              <Button type="button" onClick={handleStartEditing} className="bg-blue text-black dark:text-white"><Pencil className="h-4 w-4" /> Edit</Button>
             </div>
-            <div>
-              <span className="font-bold">1.2K</span> <span className="text-gray">Followers</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

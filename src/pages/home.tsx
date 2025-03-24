@@ -12,6 +12,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from 'next/image';
+import Cookies from "js-cookie";
 
 const RECOMMENDED_ACCOUNTS = [
     {
@@ -54,6 +55,9 @@ export default function HomePage() {
     
         return () => clearTimeout(timer);
       }, []);
+
+      const token = Cookies.get("token");
+      console.log("Token:", token);
   
       const handleFollow = (accountId: number) => {
           setRecommendedAccounts(accounts => accounts.map(account => {
@@ -75,7 +79,7 @@ export default function HomePage() {
     }
     
 
-    if(!session){
+    if(!session & !token){
         return <LoginForm />
     }
 

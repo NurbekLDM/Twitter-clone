@@ -1,7 +1,7 @@
 import "../styles/globals.css";
 import { AppProps } from "next/app";
 import { ThemeProvider } from "@/provider";
-
+import { Toaster } from "sonner";
 
 
 function MyApp({ Component, pageProps }: AppProps) {
@@ -17,7 +17,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     >
 
         <Component {...pageProps} />
-
+       <Toaster />
     </ThemeProvider>
   );
 }

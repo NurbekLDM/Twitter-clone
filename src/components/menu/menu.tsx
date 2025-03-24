@@ -2,7 +2,7 @@
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { JSX, useRef, useState } from "react";
 import { AiOutlineMenuUnfold } from "react-icons/ai";
 import { IoHomeOutline, IoSettingsOutline, IoBookmarksOutline } from "react-icons/io5";
 import { FaRegCircleUser } from "react-icons/fa6";
@@ -20,14 +20,14 @@ const menuItems = [
   { title: "Bookmarks", icon: <IoBookmarksOutline />, href: "/bookmarks" },
 ];
 
-const MenuSection = ({ desktopClassName, mobileClassName }) => (
+const MenuSection = ({ desktopClassName, mobileClassName }: { desktopClassName: string; mobileClassName: string }) => (
   <>
     <FloatingDockDesktop items={menuItems} className={desktopClassName} />
     <FloatingDockMobile items={menuItems} className={mobileClassName} />
   </>
 );
 
-const FloatingDockMobile = ({ items, className }) => {
+const FloatingDockMobile = ({ items, className }: { items: { title: string; icon: JSX.Element; href: string }[]; className: string }) => {
   const [open, setOpen] = useState(false);
   return (
     <div className={cn("relative left-2 block md:hidden", className)}>
@@ -43,7 +43,7 @@ const FloatingDockMobile = ({ items, className }) => {
                 transition={{ delay: (items.length - 1 - idx) * 0.05 }}
               >
                 <Link href={item.href} className="h-10 w-10 rounded-full bg-gray-50 dark:bg-neutral-900 flex items-center justify-center">
-                  <div className="h-4 w-4">{item.icon}</div>
+                  <div className="h-3 w-3">{item.icon}</div>
                 </Link>
               </motion.div>
             ))}
@@ -57,7 +57,7 @@ const FloatingDockMobile = ({ items, className }) => {
   );
 };
 
-const FloatingDockDesktop = ({ items, className }) => {
+const FloatingDockDesktop = ({ items, className }: { items: { title: string; icon: JSX.Element; href: string }[]; className: string }) => {
   const mouseX = useMotionValue(Infinity);
   return (
     <motion.div
@@ -72,9 +72,10 @@ const FloatingDockDesktop = ({ items, className }) => {
   );
 };
 
-const IconContainer = ({ mouseX, title, icon, href }) => {
-  const ref = useRef(null);
-  const distance = useTransform(mouseX, (val) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const IconContainer = ({ mouseX, title, icon, href }: { mouseX: any; title: string; icon: JSX.Element; href: string }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const distance = useTransform(mouseX, (val: number) => {
     const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
     return val - bounds.x - bounds.width / 2;
   });

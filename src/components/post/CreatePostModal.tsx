@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import React, { useState, useRef } from 'react';
 import { 
   Dialog, 
@@ -10,29 +11,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, X, Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import {toast} from 'sonner';
+import postsService from '@/actions/post.action';
 
 
 interface CreatePostModalProps {
   onSubmit: (content: string, image: string | null) => void;
 }
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({ onSubmit }) => {
+const CreatePostModal: React.FC<CreatePostModalProps> = () => {
   const [content, setContent] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Image too large",
-          description: "Please select an image under 5MB",
-          variant: "destructive",
-        });
+        toast("Image size must be less than 5MB", {
+          style: { backgroundColor: "red" }});
         return;
       }
       
@@ -53,31 +52,46 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ onSubmit }) => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!content.trim()) {
-      toast({
-        title: "Empty post",
-        description: "Please add some text to your post.",
-        variant: "destructive",
-      });
-      return;
+        toast("Please enter some text");
+        return;
     }
-    
+
     setIsSubmitting(true);
-    
-    // Simulate a small delay for the submission
-    setTimeout(() => {
-      onSubmit(content, image);
-      setContent('');
-      setImage(null);
-      setIsSubmitting(false);
-      
-      toast({
-        title: "Post created",
-        description: "Your post has been published successfully.",
+
+    try {
+
+        const formData = new FormData();
+        formData.append("text", content);
+
+        if (fileInputRef.current?.files?.[0]) {
+            formData.append("post-image", fileInputRef.current.files[0]);
+        }
+
+
+        const response = await postsService.createPost(formData);
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        setContent('');
+        setImage(null);
+        setIsSubmitting(false);
+
+      toast(response?.message || "Create post succesfully", {
+        style: { backgroundColor: "green" },
       });
-    }, 500);
-  };
+
+    } catch (error) {
+        console.error("Error creating post:", error);
+         toast((error as Error)?.message || "Error creating post", {
+                style: { backgroundColor: "red" },
+              });
+    }
+};
+
 
   const reset = () => {
     setContent('');
@@ -87,7 +101,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ onSubmit }) => {
     }
   };
 
-  return (
+  return (  
     <Dialog>
       <DialogTrigger asChild>
         <Button className="bg-blue  rounded-full px-6 hover:bg-blue/90 transition-colors">
@@ -123,7 +137,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ onSubmit }) => {
           
           {image && (
             <div className="relative rounded-xl overflow-hidden  border-gray">
-              <Image 
+              <img 
                 src={image} 
                 width={300}
                 height={300}
@@ -158,9 +172,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ onSubmit }) => {
               className="text-blue hover:text-blue/80 hover:bg-blue/10"
             >
               <Image
-              alt='img'
-              width={20}
-              height={20}
               className="w-5 h-5 mr-2" />
               Add Image
             </Button>

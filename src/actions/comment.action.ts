@@ -1,39 +1,159 @@
-import Axios from "axios";
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { AxiosInstance } from 'axios';
 
-const API_URL = 'https://api.com';
+const API_URL = 'https://twitter-backend-lac-one.vercel.app/api/comments';
 
-export const fetchComments = async (postId: number) => {
-    try {
-        const response = await Axios.get(`${API_URL}/posts/${postId}/comments`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching comments', error);
-    }
+interface Comment {
+    id: string;
+    user_id: string;
+    post_id: string;
+    text: string;
+    created_at: string;
+    likes: number;
 }
 
-export const createComment = async (postId: number, data: any) => {
-    try {
-        const response = await Axios.post(`${API_URL}/posts/${postId}/comments`, data);
-        return response.data;
-    } catch (error) {
-        console.error('Error creating comment', error);
-    }
+interface ApiResponse<T> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type
+     
+    data?: ApiResponse<Comment[]>;
+    message: string;
+    comment?: T;
+    error?: string;
 }
 
-export const updateComment = async (postId: number, commentId: number, data: any) => {
-    try {
-        const response = await Axios.put(`${API_URL}/posts/${postId}/comments/${commentId}`, data);
-        return response.data;
-    } catch (error) {
-        console.error('Error updating comment', error);
-    }
+interface CommentPayload {
+    post_id: string;
+    comment: string;
+    user_id: string;
 }
 
-export const deleteComment = async (postId: number, commentId: number) => {
-    try {
-        const response = await Axios.delete(`${API_URL}/posts/${postId}/comments/${commentId}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error deleting comment', error);
+class CommentService {
+    private api: AxiosInstance;
+    private baseUrl: string = API_URL;
+    private token: string | null = null;
+
+    constructor() {
+        this.api = axios.create({
+            baseURL: this.baseUrl,
+            withCredentials: true,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        this.api.interceptors.request.use(
+            (config) => {
+                const token = Cookies.get("token");
+                if (token && config.headers) {
+                    config.headers['Authorization'] = token
+                }
+                return config;
+            },
+            (error) => Promise.reject(error)
+        );
     }
+
+    public setToken(token: string) {
+        this.token = token;
+    }
+
+    public async createComment(payload: CommentPayload): Promise<ApiResponse<Comment>> {
+        try {
+            const response = await this.api.post<ApiResponse<Comment>>('/create', payload);
+            return response.data;
+        } catch (error) {
+            return {
+                message: 'An error occurred while creating comment',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                error: (error as any).response.data.error,
+            };
+        }
+    }
+
+   public async likeComment(commentId: string): Promise<ApiResponse<Comment>> {
+        try {
+            const response = await this.api.post<ApiResponse<Comment>>(`/${commentId}/like`);
+            return response.data;
+        } catch (error) {
+            return {
+                message: 'An error occurred while liking comment',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                error: (error as any).response.data.error,
+            };
+        }
+   } 
+
+   public async unlikeComment(commentId: string): Promise<ApiResponse<Comment>> {
+        try {
+            const response = await this.api.delete<ApiResponse<Comment>>(`/${commentId}/unlike`);
+            return response.data;
+        } catch (error) {
+            return {
+                message: 'An error occurred while unliking comment',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                error: (error as any).response.data.error,
+            };
+   }
 }
+
+public async getUserLikedComments(): Promise<ApiResponse<Comment[]>> {
+        try {
+            const response = await this.api.get<ApiResponse<Comment[]>>('/userLikedComments');
+            return response.data;
+        } catch (error) {
+            return {
+                message: 'An error occurred while fetching liked comments',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                error: (error as any).response?.data?.error || 'Unknown error',
+            };
+        }
+}
+
+    public async deleteComment(commentId: string): Promise<ApiResponse<Comment>> {
+        try {
+            const response = await this.api.delete<ApiResponse<Comment>>(`/delete/${commentId}`);
+            return response.data;
+        } catch (error) {
+            return {
+                message: 'An error occurred while deleting comment',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                error: (error as any).response.data.error,
+            };
+        }
+    }
+
+    public async updateComment(commentId: string, payload: CommentPayload): Promise<ApiResponse<Comment>> {
+        try {
+            const response = await this.api.put<ApiResponse<Comment>>(`/update/${commentId}`, payload);
+            return response.data;
+        } catch (error) {
+            return {
+                message: 'An error occurred while updating comment',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                error: (error as any).response.data.error,
+            };
+        }
+    }
+
+    public async getComments(postId: string): Promise<ApiResponse<Comment[]>> {
+        try {
+            const response = await this.api.get<ApiResponse<Comment[]>>(`/all/${postId}`);
+            return response.data;
+        } catch (error) {
+            return {
+                message: 'An error occurred while fetching comments',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                error: (error as any).response.data.error,
+            };
+        }
+    }
+
+
+
+}
+
+const commentService = new CommentService();
+export default commentService;

@@ -1,14 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { 
-  Heart, MessageCircle, Clock, Calendar, History as HistoryIcon, User
+  Heart, MessageCircle, Clock, Calendar, History as HistoryIcon,
 } from 'lucide-react';
-import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import Image from 'next/image';
 import MenuSection from "@/components/menu/menu";
 
 // Sample data for user history
@@ -27,7 +25,7 @@ const USER_HISTORY = {
       id: 2,
       post: {
         id: 5,
-        content: "Finally got tickets to that concert I've been waiting for! Anyone else going to be there? #MusicFestival #WeekendPlans",
+        content: "Finally got tickets to that concert I `ve been waiting for! Anyone else going to be there? #MusicFestival #WeekendPlans",
         timestamp: "12h",
       },
       actionDate: "2024-03-14T09:15:00"
@@ -55,7 +53,7 @@ const USER_HISTORY = {
         content: "Just finished a 10km run through the city. The sunrise over the skyline was absolutely breathtaking! 🏃‍♀️ #MorningRun #FitnessGoals",
         timestamp: "7h",
       },
-      comment: "That's impressive! Which route did you take?",
+      comment: "That`s impressive! Which route did you take?",
       actionDate: "2024-03-16T08:20:00"
     },
     {
@@ -67,7 +65,7 @@ const USER_HISTORY = {
           username: "michaelb",
           avatar: "https://i.pravatar.cc/150?img=6",
         },
-        content: "Just published my first article on medium about my journey into coding. Link in bio if you're interested! #Coding #TechJourney #WebDevelopment",
+        content: "Just published my first article on medium about my journey into coding. Link in bio if you`re interested! #Coding #TechJourney #WebDevelopment",
         timestamp: "1d",
       },
       comment: "Great article! Looking forward to more content from you.",
@@ -93,11 +91,11 @@ const History = () => {
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
+    return new Intl.DateTimeFormat(`en-US`, {
+      month: `short`,
+      day: `numeric`,
+      hour: `numeric`,
+      minute: `numeric`,
       hour12: true
     }).format(date);
   };
@@ -147,10 +145,10 @@ const History = () => {
                     {[...userHistory?.comments || [], ...userHistory?.likes || []]
                       .sort((a, b) => new Date(b.actionDate).getTime() - new Date(a.actionDate).getTime())
                       .map((activity) => {
-                        const isComment = 'comment' in activity;
+                        const isComment = `comment` in activity;
                         return (
                           <ActivityCard 
-                            key={`${isComment ? 'comment' : 'like'}-${activity.id}`}
+                            key={`${isComment ? `comment` : 'like'}-${activity.id}`}
                             activity={activity}
                             type={isComment ? 'comment' : 'like'}
                             formatDate={formatDate}
@@ -224,7 +222,7 @@ const History = () => {
 
 // Activity Card Component
 interface ActivityCardProps {
-  activity: any;
+  activity: unknown;
   type: 'like' | 'comment';
   formatDate: (date: string) => string;
 }
@@ -254,7 +252,7 @@ const ActivityCard = ({ activity, type, formatDate }: ActivityCardProps) => {
           
           {type === 'comment' && (
             <div className="px-3 py-2 bg-muted/30 rounded-md mb-2 text-sm">
-              <p className="italic">"{activity.comment}"</p>
+              <p className="italic">`{activity.comment}`</p>
             </div>
           )}
           
