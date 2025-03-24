@@ -13,7 +13,7 @@ export interface Post {
 }
 
 interface ApiResponse<T> {
-    data(data: any): unknown;
+    data: unknown;
     message: string;
     post?: T;
     error?: string;
@@ -183,7 +183,7 @@ class PostService {
         }
     }
 
-    private handleError(error: unknown, message: string): ApiResponse<never> {
+    private handleError(error: unknown, message: string): ApiResponse<never> {  
         const axiosError = error as AxiosError;
         return {
             message,

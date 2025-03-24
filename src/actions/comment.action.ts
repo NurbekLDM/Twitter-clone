@@ -15,9 +15,7 @@ interface Comment {
 }
 
 interface ApiResponse<T> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type
-     
+      
     data?: ApiResponse<Comment[]>;
     message: string;
     comment?: T;
@@ -67,7 +65,6 @@ class CommentService {
         } catch (error) {
             return {
                 message: 'An error occurred while creating comment',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 error: (error as any).response.data.error,
             };
         }
@@ -80,7 +77,7 @@ class CommentService {
         } catch (error) {
             return {
                 message: 'An error occurred while liking comment',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 error: (error as any).response.data.error,
             };
         }
@@ -93,7 +90,7 @@ class CommentService {
         } catch (error) {
             return {
                 message: 'An error occurred while unliking comment',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 error: (error as any).response.data.error,
             };
    }
@@ -106,7 +103,7 @@ public async getUserLikedComments(): Promise<ApiResponse<Comment[]>> {
         } catch (error) {
             return {
                 message: 'An error occurred while fetching liked comments',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 error: (error as any).response?.data?.error || 'Unknown error',
             };
         }
@@ -119,7 +116,7 @@ public async getUserLikedComments(): Promise<ApiResponse<Comment[]>> {
         } catch (error) {
             return {
                 message: 'An error occurred while deleting comment',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 error: (error as any).response.data.error,
             };
         }
@@ -132,7 +129,7 @@ public async getUserLikedComments(): Promise<ApiResponse<Comment[]>> {
         } catch (error) {
             return {
                 message: 'An error occurred while updating comment',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 error: (error as any).response.data.error,
             };
         }
@@ -145,7 +142,7 @@ public async getUserLikedComments(): Promise<ApiResponse<Comment[]>> {
         } catch (error) {
             return {
                 message: 'An error occurred while fetching comments',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 error: (error as any).response.data.error,
             };
         }

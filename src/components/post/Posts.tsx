@@ -7,7 +7,6 @@ import authService from "@/actions/user.action";
 import { toast } from "sonner";
 
 const Posts: React.FC = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [posts, setPosts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [likedPosts, setLikedPosts] = useState<{ [key: string]: boolean }>({});
@@ -28,16 +27,22 @@ const Posts: React.FC = () => {
             if (commentsResponse) {
                 setComments((prev) => ({
                     ...prev,
-                    [postId]: commentsResponse as unknown as unknown[]
+                    [postId]: commentsResponse as unknown as unknown[],
                 }));
             }
             setShowComments(true);
             const likedCommentsResponse = await commentsService.getUserLikedComments();
             if (likedCommentsResponse && likedCommentsResponse.data) {
-                const likedCommentsMap = Array.isArray(likedCommentsResponse.data) ? likedCommentsResponse.data.reduce((acc, comment) => {
-                    acc[comment.comment_id] = true;
-                    return acc;
-                }, {}) : {};
+                // Fix: Add proper type annotation for the accumulator
+                const likedCommentsMap = Array.isArray(likedCommentsResponse.data)
+                    ? likedCommentsResponse.data.reduce<{ [key: string]: boolean }>(
+                          (acc, comment) => {
+                              acc[comment.comment_id] = true;
+                              return acc;
+                          },
+                          {}
+                      )
+                    : {};
                 setLikedComments(likedCommentsMap);
             }
         } catch (error) {
@@ -71,37 +76,45 @@ const Posts: React.FC = () => {
             try {
                 const response = await postsService.getPosts();
                 console.log("Posts:", response);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                setPosts(Array.isArray(response.data) ? response.data : [] as any[]);
+                setPosts(Array.isArray(response.data) ? response.data : []);
 
                 const likedResponse = await postsService.getUserLikedPosts();
                 if (likedResponse && likedResponse.data) {
-                    const likedMap = Array.isArray(likedResponse.data) ? likedResponse.data.reduce((acc, post) => {
-                        acc[post.post_id] = true;
-                        return acc;
-                    }, {} as { [key: string]: boolean });
+                    const likedMap = Array.isArray(likedResponse.data)
+                        ? likedResponse.data.reduce<{ [key: string]: boolean }>(
+                              (acc, post) => {
+                                  acc[post.post_id] = true;
+                                  return acc;
+                              },
+                              {}
+                          )
+                        : {};
                     setLikedPosts(likedMap);
                 }
 
                 const bookmarkedResponse = await postsService.getUserBookMarkedPosts();
                 if (bookmarkedResponse && bookmarkedResponse.data) {
-                    const bookmarkedMap = bookmarkedResponse.data.reduce((acc, post) => {
-                        acc[post.post_id] = true;
-                        return acc;
-                    }, {});
+                    const bookmarkedMap = bookmarkedResponse.data.reduce<{ [key: string]: boolean }>(
+                        (acc, post) => {
+                            acc[post.post_id] = true;
+                            return acc;
+                        },
+                        {}
+                    );
                     setBookmarkedPosts(bookmarkedMap);
                 }
 
-                // Fetch user liked comments
                 const likedCommentsResponse = await commentsService.getUserLikedComments();
                 if (likedCommentsResponse && likedCommentsResponse.data) {
-                    const likedCommentsMap = likedCommentsResponse.data.reduce((acc, comment) => {
-                        acc[comment.comment_id] = true;
-                        return acc;
-                    }, {});
+                    const likedCommentsMap = likedCommentsResponse.data.reduce<{ [key: string]: boolean }>(
+                        (acc, comment) => {
+                            acc[comment.comment_id] = true;
+                            return acc;
+                        },
+                        {}
+                    );
                     setLikedComments(likedCommentsMap);
                 }
-
             } catch (error) {
                 console.error("Error fetching posts:", error);
             } finally {
@@ -167,8 +180,6 @@ const Posts: React.FC = () => {
         }
     };
 
-  
-
     const closeComments = () => {
         setShowComments(false);
         setActivePostId(null);
@@ -195,7 +206,7 @@ const Posts: React.FC = () => {
     const handleDeleteComment = async (commentId: string) => {
         try {
             await commentsService.deleteComment(commentId);
-            await openComments(activePostId);
+            await openComments(activePostId!); // Non-null assertion since activePostId is set when comments are open
         } catch (error) {
             console.error("Error deleting comment:", error);
         }
@@ -203,8 +214,8 @@ const Posts: React.FC = () => {
 
     const handleEditComment = async (commentId: string, updatedText: string) => {
         try {
-            await commentsService.updateComment(commentId, { post_id: activePostId, comment: updatedText });
-            await openComments(activePostId);
+            await commentsService.updateComment(commentId, { post_id: activePostId!, comment: updatedText });
+            await openComments(activePostId!);
         } catch (error) {
             console.error("Error updating comment:", error);
         }
@@ -271,8 +282,12 @@ const Posts: React.FC = () => {
 
                                 <div className="flex justify-between text-gray">
                                     <button className="flex items-center gap-1 group" onClick={() => toggleLike(post.id)}>
-                                        <Heart className={`h-5 w-5 transition-colors ${likedPosts[post.id] ? "text-red fill-red" : ""}`} />
-                                        <span>{post.likes?.[0]?.count ?? 0 + (likedPosts[post.id] ? 1 : 0)}</span>
+                                        <Heart
+                                            className={`h-5 w-5 transition-colors ${
+                                                likedPosts[post.id] ? "text-red fill-red" : ""
+                                            }`}
+                                        />
+                                        <span>{(post.likes?.[0]?.count ?? 0) + (likedPosts[post.id] ? 1 : 0)}</span>
                                     </button>
 
                                     <button
@@ -288,8 +303,15 @@ const Posts: React.FC = () => {
                                         <span>0</span>
                                     </button>
 
-                                    <button className="flex items-center gap-1 group" onClick={() => toggleBookmark(post.id)}>
-                                        <Bookmark className={`h-5 w-5 transition-colors ${bookmarkedPosts[post.id] ? "text-blue fill-blue" : ""}`} />
+                                    <button
+                                        className="flex items-center gap-1 group"
+                                        onClick={() => toggleBookmark(post.id)}
+                                    >
+                                        <Bookmark
+                                            className={`h-5 w-5 transition-colors ${
+                                                bookmarkedPosts[post.id] ? "text-blue fill-blue" : ""
+                                            }`}
+                                        />
                                         <span>Save</span>
                                     </button>
 
@@ -319,18 +341,26 @@ const Posts: React.FC = () => {
                         </div>
 
                         <div className="p-4">
-                            {comments[activePostId]?.length === 0 ? (
-                                <p className="text-gray-500 dark:text-gray-400 text-center py-6">No comments yet. Be the first to comment!</p>
+                            {comments[activePostId!]?.length === 0 ? (
+                                <p className="text-gray-500 dark:text-gray-400 text-center py-6">
+                                    No comments yet. Be the first to comment!
+                                </p>
                             ) : (
                                 <div className="space-y-4">
-                                    {comments[activePostId]?.map((comment) => (
-                                        <article key={comment.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                    {comments[activePostId!]?.map((comment: any) => (
+                                        <article
+                                            key={comment.id}
+                                            className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                                        >
                                             <div className="flex items-center mb-2">
                                                 <div className="flex-shrink-0 mr-3">
                                                     <Image
                                                         width={24}
                                                         height={24}
-                                                        src={comment.users?.profile_picture || "https://i.pinimg.com/474x/cd/4b/d9/cd4bd9b0ea2807611ba3a67c331bff0b.jpg"}
+                                                        src={
+                                                            comment.users?.profile_picture ||
+                                                            "https://i.pinimg.com/474x/cd/4b/d9/cd4bd9b0ea2807611ba3a67c331bff0b.jpg"
+                                                        }
                                                         alt={comment.users?.username}
                                                         className="w-6 h-6 rounded-full"
                                                     />
@@ -346,16 +376,35 @@ const Posts: React.FC = () => {
                                             </div>
                                             <p className="text-gray-700 dark:text-gray-300">{comment.text}</p>
                                             <div className="mt-2 flex items-center text-xs text-gray-500 dark:text-gray-400">
-                                            <button className="flex items-center hover:text-blue-600 dark:hover:text-blue-400" onClick={() => likeComment(comment.id)}>
-                                                    <Heart className={`h-4 w-4 mr-1 ${likedComments[comment.id] ? "text-red fill-red" : ""}`} />
-                                                    {comment.comment_likes?.[0]?.count ?? 0 + (likedComments[comment.id] ? 1 : 0)}
+                                                <button
+                                                    className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
+                                                    onClick={() => likeComment(comment.id)}
+                                                >
+                                                    <Heart
+                                                        className={`h-4 w-4 mr-1 ${
+                                                            likedComments[comment.id] ? "text-red fill-red" : ""
+                                                        }`}
+                                                    />
+                                                    {(comment.comment_likes?.[0]?.count ?? 0) +
+                                                        (likedComments[comment.id] ? 1 : 0)}
                                                 </button>
                                                 <span className="mx-2">•</span>
-                                                <button className="flex items-center hover:text-blue-600 dark:hover:text-blue-400" onClick={() => handleEditComment(comment.id, prompt("Edit comment:", comment.text) || comment.text)}>
+                                                <button
+                                                    className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
+                                                    onClick={() =>
+                                                        handleEditComment(
+                                                            comment.id,
+                                                            prompt("Edit comment:", comment.text) || comment.text
+                                                        )
+                                                    }
+                                                >
                                                     Edit
                                                 </button>
                                                 <span className="mx-2">•</span>
-                                                <button className="flex items-center hover:text-red-600 dark:hover:text-red-400" onClick={() => handleDeleteComment(comment.id)}>
+                                                <button
+                                                    className="flex items-center hover:text-red-600 dark:hover:text-red-400"
+                                                    onClick={() => handleDeleteComment(comment.id)}
+                                                >
                                                     Delete
                                                 </button>
                                             </div>
