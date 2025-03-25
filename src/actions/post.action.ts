@@ -13,9 +13,8 @@ export interface Post {
 }
 
 interface ApiResponse<T> {
-    data: unknown;
+    data: T | null;
     message: string;
-    post?: T;
     error?: string;
 }
 
@@ -26,12 +25,10 @@ interface PostPayload {
 
 class PostService {
     private api: AxiosInstance;
-    private baseUrl: string = API_URL;
-    private token: string | null = null;
 
     constructor() {
         this.api = axios.create({
-            baseURL: this.baseUrl,
+            baseURL: API_URL,
             withCredentials: true,
             headers: {
                 'Content-Type': 'application/json',
@@ -42,16 +39,12 @@ class PostService {
             (config) => {
                 const token = Cookies.get("token");
                 if (token && config.headers) {
-                    config.headers["Authorization"] = `Bearer ${token}`;
+                    config.headers["Authorization"] = token;
                 }
                 return config;
             },
             (error) => Promise.reject(error)
         );
-    }
-
-    public setToken(token: string) {
-        this.token = token;
     }
 
     public async createPost(formData: FormData): Promise<ApiResponse<Post>> {
@@ -60,12 +53,12 @@ class PostService {
             const response = await this.api.post<ApiResponse<Post>>('/create', formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
-                    "Authorization": `Bearer ${token}`,
+                    "Authorization": token,
                 },
             });
             return response.data;
         } catch (error) {
-            return this.handleError(error, "An error occurred while creating the post");
+            return this.handleError<Post>(error, "An error occurred while creating the post");
         }
     }
 
@@ -74,7 +67,7 @@ class PostService {
             const response = await this.api.get<ApiResponse<Post[]>>('/');
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while fetching posts');
+            return this.handleError<Post[]>(error, 'An error occurred while fetching posts');
         }
     }
 
@@ -83,16 +76,16 @@ class PostService {
             const response = await this.api.get<ApiResponse<Post>>(`/${id}`);
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while fetching post');
+            return this.handleError<Post>(error, 'An error occurred while fetching post');
         }
     }
 
-    public async deletePost(id: string): Promise<ApiResponse<Post>> {
+    public async deletePost(id: string): Promise<ApiResponse<null>> {
         try {
-            const response = await this.api.delete<ApiResponse<Post>>(`/delete/${id}`);
+            const response = await this.api.delete<ApiResponse<null>>(`/delete/${id}`);
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while deleting post');
+            return this.handleError<null>(error, 'An error occurred while deleting post');
         }
     }
 
@@ -101,16 +94,17 @@ class PostService {
             const response = await this.api.get<ApiResponse<{ user_id: string }[]>>('/likedPosts');
             return response.data;
         } catch (error) {
-            return this.handleError(error, "An error occurred while fetching liked posts");
+            return this.handleError<{ user_id: string }[]>(error, "An error occurred while fetching liked posts");
         }
     }
 
-    public async getUserBookMarkedPosts(): Promise<ApiResponse<{ user_id: string }[]>> {
+    public async getUserBookmarkedPosts(): Promise<ApiResponse<[]>> {
         try {
             const response = await this.api.get<ApiResponse<{ user_id: string }[]>>('/bookmarkedPosts');
+           
             return response.data;
         } catch (error) {
-            return this.handleError(error, "An error occurred while fetching bookmarked posts");
+            return this.handleError<{ user_id: string }[]>(error, "An error occurred while fetching bookmarked posts");
         }
     }
 
@@ -119,7 +113,7 @@ class PostService {
             const response = await this.api.put<ApiResponse<Post>>(`/update/${id}`, payload);
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while updating post');
+            return this.handleError<Post>(error, 'An error occurred while updating post');
         }
     }
 
@@ -128,7 +122,7 @@ class PostService {
             const response = await this.api.post<ApiResponse<Post>>(`/${id}/like`);
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while liking post');
+            return this.handleError<Post>(error, 'An error occurred while liking post');
         }
     }
 
@@ -137,7 +131,7 @@ class PostService {
             const response = await this.api.delete<ApiResponse<Post>>(`/${id}/unlike`);
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while unliking post');
+            return this.handleError<Post>(error, 'An error occurred while unliking post');
         }
     }
 
@@ -146,16 +140,16 @@ class PostService {
             const response = await this.api.post<ApiResponse<Post>>(`/${id}/bookmark`);
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while adding bookmark');
+            return this.handleError<Post>(error, 'An error occurred while adding bookmark');
         }
     }
 
-    public async unBookmark(id: string): Promise<ApiResponse<Post>> {
+    public async removeBookmark(id: string): Promise<ApiResponse<Post>> {
         try {
             const response = await this.api.delete<ApiResponse<Post>>(`/${id}/unbookmark`);
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while removing bookmark');
+            return this.handleError<Post>(error, 'An error occurred while removing bookmark');
         }
     }
 
@@ -164,33 +158,34 @@ class PostService {
             const response = await this.api.get<ApiResponse<Post[]>>(`/user/${userId}`);
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while fetching bookmarks');
+            return this.handleError<Post[]>(error, 'An error occurred while fetching bookmarks');
         }
     }
 
-    public async getUserPost(): Promise<ApiResponse<Post[]>> {
+    public async getUserPosts(): Promise<ApiResponse<Post[]>> {
         try {
             const token = Cookies.get("token");
             const response = await this.api.get<ApiResponse<Post[]>>('/userPost', {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': token,
                     'Content-Type': 'application/json',
                 }
             });
             return response.data;
         } catch (error) {
-            return this.handleError(error, 'An error occurred while fetching user posts');
+            return this.handleError<Post[]>(error, 'An error occurred while fetching user posts');
         }
     }
 
-    private handleError(error: unknown, message: string): ApiResponse<never> {  
+    private handleError<T>(error: unknown, message: string): ApiResponse<T> {  
         const axiosError = error as AxiosError;
         return {
             message,
+            data: null,
             error: (axiosError.response?.data as { error?: string })?.error || axiosError.message || "Unknown error",
         };
     }
 }
 
-const postsService = new PostService();
-export default postsService;
+const postService = new PostService();
+export default postService;

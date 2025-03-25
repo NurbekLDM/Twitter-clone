@@ -59,14 +59,24 @@ const ProfileHeader = () => {
         if (isMounted) setLoading(false);
       }
     };
-
     fetchUserData();
+
 
     return () => {
       isMounted = false;
     };
   }, []);
 
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      window.location.href = "/home";
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast("Error logging out", { style: { backgroundColor: "red" } });
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError, AxiosResponse } from "axios";
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import Cookies from "js-cookie";
 
 const API_URL = "https://twitter-backend-lac-one.vercel.app/api/users";
@@ -37,7 +37,7 @@ export interface SocialLoginResponse {
 
 export interface ApiResponse<T> {
   message: string;
-  user?: T;
+  data: T | null;
   error?: string;
   token?: string;
   followingCount?: number;
@@ -62,21 +62,18 @@ export interface FollowPayload {
 
 class AuthService {
   private api: AxiosInstance;
-  private baseUrl: string = API_URL;
 
   constructor() {
     this.api = axios.create({
-      baseURL: this.baseUrl,
-      withCredentials: true, // Required for cookies
+      baseURL: API_URL,
+      withCredentials: true,
     });
 
-    // Interceptor to attach token to requests
     this.api.interceptors.request.use(
       (config) => {
         const token = Cookies.get("token");
-        console.log("Token:", token);
         if (token && config.headers) {
-          config.headers["Authorization"] = `Bearer ${token}`;
+          config.headers["Authorization"] = token;
         }
         config.headers["Content-Type"] = "application/json";
         return config;
@@ -85,12 +82,21 @@ class AuthService {
     );
   }
 
-  public async setToken(token: string) {
+  public setToken(token: string) {
     Cookies.set("token", token, { sameSite: "Lax", secure: false });
   }
 
-  public async clearToken() {
+  public clearToken() {
     Cookies.remove("token");
+  }
+
+  private handleError<T>(error: unknown, message: string): ApiResponse<T> {
+    const axiosError = error as AxiosError;
+    return {
+      message,
+      data: null,
+      error: (axiosError.response?.data as { error?: string })?.error || axiosError.message || "Unknown error",
+    };
   }
 
   public async getUsers(): Promise<ApiResponse<User[]>> {
@@ -98,7 +104,7 @@ class AuthService {
       const response: AxiosResponse<ApiResponse<User[]>> = await this.api.get("/all");
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Failed to get users");
+      return this.handleError<User[]>(error, "Failed to get users");
     }
   }
 
@@ -107,7 +113,7 @@ class AuthService {
       const response: AxiosResponse<ApiResponse<User>> = await this.api.post("/register", payload);
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Registration failed");
+      return this.handleError<User>(error, "Registration failed");
     }
   }
 
@@ -116,7 +122,7 @@ class AuthService {
       const response: AxiosResponse<ApiResponse<User>> = await this.api.post("/login", payload);
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Login failed");
+      return this.handleError<User>(error, "Login failed");
     }
   }
 
@@ -126,20 +132,16 @@ class AuthService {
       this.clearToken();
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Logout failed");
+      return this.handleError<null>(error, "Logout failed");
     }
   }
 
-  public async socialLogin(userData: SocialLoginData): Promise<SocialLoginResponse> {
+  public async socialLogin(userData: SocialLoginData): Promise<ApiResponse<SocialLoginResponse>> {
     try {
-      const response = await this.api.post<SocialLoginResponse>("/social-login", userData);
+      const response: AxiosResponse<ApiResponse<SocialLoginResponse>> = await this.api.post("/social-login", userData);
       return response.data;
     } catch (error) {
-      console.error("Social login error:", error);
-      return {
-        message: "Social login failed",
-        user: {} as User // Provide a default empty user object
-      };
+      return this.handleError<SocialLoginResponse>(error, "Social login failed");
     }
   }
 
@@ -148,7 +150,7 @@ class AuthService {
       const response: AxiosResponse<ApiResponse<User[]>> = await this.api.get("/recommended");
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Failed to get recommended users");
+      return this.handleError<User[]>(error, "Failed to get recommended users");
     }
   }
 
@@ -157,43 +159,56 @@ class AuthService {
       const response: AxiosResponse<ApiResponse<User>> = await this.api.get("/me");
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Failed to get user data");
+      return this.handleError<User>(error, "Failed to get user data");
     }
   }
 
-  public async followUser(payload: FollowPayload): Promise<ApiResponse<unknown>> {
+  public async followUser(payload: FollowPayload): Promise<ApiResponse<any>> {
     try {
-      const response: AxiosResponse<ApiResponse<unknown>> = await this.api.post("/follow", payload);
+      const response: AxiosResponse<ApiResponse<any>> = await this.api.post("/follow", payload);
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Failed to follow user");
+      return this.handleError<any>(error, "Failed to follow user");
     }
   }
 
-  public async unfollowUser(payload: FollowPayload): Promise<ApiResponse<unknown>> {
+  public async getUserFollowed(): Promise<ApiResponse<User[]>> {
     try {
-      const response: AxiosResponse<ApiResponse<unknown>> = await this.api.post("/unfollow", payload);
+      const response: AxiosResponse<ApiResponse<User[]>> = await this.api.get("/userFollowed");
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Failed to unfollow user");
+      return this.handleError<User[]>(error, "Failed to get followed users");
+    }
+  }
+
+  public async unfollowUser(payload: FollowPayload): Promise<ApiResponse<any>> {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await this.api.post("/unfollow", payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      return this.handleError<any>(error, "Failed to unfollow user");
     }
   }
 
   public async getFollowingCount(): Promise<ApiResponse<number>> {
     try {
-      const response: AxiosResponse<ApiResponse<number>> = await this.api.get("/following-count");
+      const response: AxiosResponse<ApiResponse<number>> = await this.api.get(`/following-count`);
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Failed to get following count");
+      return this.handleError<number>(error, "Failed to get following count");
     }
   }
 
   public async getFollowersCount(): Promise<ApiResponse<number>> {
     try {
-      const response: AxiosResponse<ApiResponse<number>> = await this.api.get("/followers-count");
+      const response: AxiosResponse<ApiResponse<number>> = await this.api.get(`/followers-count`);
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Failed to get followers count");
+      return this.handleError<number>(error, "Failed to get followers count");
     }
   }
 
@@ -203,42 +218,24 @@ class AuthService {
       formData.append("full_name", payload.full_name);
       formData.append("username", payload.username);
       formData.append("bio", payload.bio || '');
-
+  
       if (payload.profile_picture) {
-        formData.append("profile", payload.profile_picture);
-        console.log("Payload profile picture:", payload.profile_picture);
-      }
-
-      console.log("Form data:", formData);
-      for (const el of formData.entries()) {
-        console.log(el[0], el[1]);
+        formData.append("profile_picture", payload.profile_picture);
       }
 
       const token = Cookies.get("token");
-
-      const response: AxiosResponse<ApiResponse<User>> = await this.api.put(
-        `/update`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            "Authorization": `Bearer ${token}`,
-          },
-        }
-      );
-
+      
+      const response: AxiosResponse<ApiResponse<User>> = await this.api.put(`/update`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "Authorization": token,
+        },
+      });
+  
       return response.data;
     } catch (error) {
-      return this.handleError(error, "Profile update failed");
+      return this.handleError<User>(error, "Profile update failed");
     }
-  }
-
-  private handleError(error: unknown, message: string): ApiResponse<never> {
-    const axiosError = error as AxiosError;
-    return {
-      message,
-      error: axiosError.response && axiosError.response.data && typeof axiosError.response.data === 'object' && 'error' in axiosError.response.data ? String(axiosError.response.data.error) : axiosError.message || "Unknown error",
-    };
   }
 }
 

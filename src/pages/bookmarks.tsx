@@ -1,543 +1,503 @@
-import { useState, useEffect } from "react";
-import {
-  Heart,
-  MessageCircle,
-  Repeat2,
-  MoreHorizontal,
-  Check,
-  BookmarkMinus,
-  Bookmark,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
-import MenuSection from "@/components/menu/menu";
+import React, { useEffect, useState } from "react";
+import { Heart, MessageCircle, Share2, Repeat2, Bookmark, X, Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
+import postsService from "@/actions/post.action";
+import commentsService, { Comment } from "@/actions/comment.action";
+import authService from "@/actions/user.action";
+import { toast } from "sonner";
 
-// Sample data for bookmarked posts
-const BOOKMARKED_POSTS = [
-  {
-    id: 1,
-    author: {
-      name: "Jessica Chen",
-      username: "jesschen",
-      avatar: "https://i.pravatar.cc/150?img=1",
-      verified: true,
-    },
-    content:
-      "Just discovered a fantastic new design tool that streamlines my workflow. Anyone else tried it yet? #DesignTools #UXDesign",
-    timestamp: "2h",
-    stats: {
-      likes: 245,
-      comments: 32,
-      retweets: 18,
-    },
-    liked: true,
-    image:
-      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&w=2072&q=80",
-    bookmarkedOn: "Today at 10:30 AM",
-  },
-  {
-    id: 3,
-    author: {
-      name: "Sarah Johnson",
-      username: "sarahj",
-      avatar: "https://i.pravatar.cc/150?img=3",
-      verified: true,
-    },
-    content:
-      "Just finished a 10km run through the city. The sunrise over the skyline was absolutely breathtaking! 🏃‍♀️ #MorningRun #FitnessGoals",
-    timestamp: "7h",
-    stats: {
-      likes: 412,
-      comments: 47,
-      retweets: 29,
-    },
-    liked: false,
-    image:
-      "https://images.unsplash.com/photo-1506631698645-c61e11b87378?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    bookmarkedOn: "Yesterday at 3:45 PM",
-  },
-  {
-    id: 5,
-    author: {
-      name: "Emma Wilson",
-      username: "emmaw",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      verified: true,
-    },
-    content:
-      "Finally got tickets to that concert I`ve been waiting for! Anyone else going to be there? #MusicFestival #WeekendPlans",
-    timestamp: "12h",
-    stats: {
-      likes: 156,
-      comments: 19,
-      retweets: 5,
-    },
-    liked: true,
-    bookmarkedOn: "2 days ago",
-  },
-  {
-    id: 6,
-    author: {
-      name: "Michael Brown",
-      username: "michaelb",
-      avatar: "https://i.pravatar.cc/150?img=6",
-      verified: false,
-    },
-    content:
-      "Just published my first article on medium about my journey into coding. Link in bio if you`re interested! #Coding #TechJourney #WebDevelopment",
-    timestamp: "1d",
-    stats: {
-      likes: 289,
-      comments: 38,
-      retweets: 27,
-    },
-    liked: false,
-    image:
-      "https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    bookmarkedOn: "Last week",
-  },
-];
+interface Post {
+  id: string;
+  text: string;
+  image?: string;
+  date: string;
+  users?: {
+    username: string;
+    profile_picture: string;
+  };
+  likes?: { count: number }[];
+  comments?: { count: number }[];
+}
 
-const BookmarksPage = () => {
-  const [bookmarkedPosts, setBookmarkedPosts] = useState<
-    typeof BOOKMARKED_POSTS
-  >([]);
+const Posts: React.FC = () => {
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [likedPosts, setLikedPosts] = useState<{ [key: string]: boolean }>({});
+  const [comments, setComments] = useState<{ [key: string]: Comment[] }>({});
+  const [showComments, setShowComments] = useState(false);
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [likedComments, setLikedComments] = useState<{ [key: string]: boolean }>({});
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setBookmarkedPosts(BOOKMARKED_POSTS);
-      setLoading(false);
-    }, 1000);
+    const fetchInitialData = async () => {
+      try {
 
-    return () => clearTimeout(timer);
+        // Fetch posts
+        const postsResponse = await postsService.getUserBookmarkedPosts();
+        if (postsResponse) {
+          setPosts(postsResponse.data);
+        }
+
+        // Fetch liked posts
+        const likedResponse = await postsService.getUserLikedPosts();
+        console.log(likedResponse);
+        if (likedResponse.data) {
+          const likedMap = likedResponse.data.reduce<{ [key: string]: boolean }>(
+            (acc, post) => {
+              acc[post.post_id] = true;
+              return acc;
+            },
+            {}
+          );
+          setLikedPosts(likedMap);
+        }
+
+        // Fetch bookmarked posts
+        const bookmarkedResponse = await postsService.getUserBookmarkedPosts();
+        if (bookmarkedResponse?.data) {
+          const bookmarkedMap = bookmarkedResponse.data.reduce<{ [key: string]: boolean }>(
+            (acc, post) => {
+              acc[post.post_id] = true;
+              return acc;
+            },
+            {}
+          );
+          setBookmarkedPosts(bookmarkedMap);
+        }
+      } catch (error) {
+        console.error("Error fetching initial data:", error);
+        toast.error("Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
+
+    const fetchLikedComments = async () => {
+      try {
+        const likedCommentsResponse = await commentsService.getUserLikedComments();
+        console.log('Liked comments: ',likedCommentsResponse);
+        if (likedCommentsResponse) {
+          const likedCommentsMap = likedCommentsResponse.reduce<{
+            [key: string]: boolean;
+          }>((acc, commentId) => {
+            acc[commentId] = true;
+            return acc;
+          }, {});
+          setLikedComments(likedCommentsMap);
+        }
+      } catch (error) {
+        console.error("Error fetching liked comments:", error);
+      }
+    };
+    fetchLikedComments();
   }, []);
 
-  const handleRemoveBookmark = (postId: number) => {
-    setBookmarkedPosts((prev) => prev.filter((post) => post.id !== postId));
-    toast({
-      title: "Removed from bookmarks",
-      description: "Post has been removed from your bookmarks",
-      duration: 3000,
-    });
+  
+  const formatRelativeDate = (isoDate: number) => {
+    const date = new Date(isoDate);
+    const now = new Date();
+  
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+    if (diffInSeconds < 60 * 60 * 24) {
+      const options = {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Tashkent',
+      };
+      const formattedDate = new Intl.DateTimeFormat('uz-UZ', options).format(date);
+      const [hour, minute] = formattedDate.split(':');
+      const newHour = parseInt(hour) + 5;
+      const newMinute = minute;
+      return `${newHour.toString().padStart(2, '0')}:${newMinute}`;
+    } else if (diffInSeconds < 60 * 60 * 48) {
+
+      return "yesterday";
+    } else {
+
+      const options = {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      };
+      return new Intl.DateTimeFormat('uz-UZ', options).format(date);
+    }
   };
 
-  const handleLike = (postId: number) => {
-    setBookmarkedPosts((posts) =>
-      posts.map((post) => {
-        if (post.id === postId) {
-          const newLikedStatus = !post.liked;
-          return {
-            ...post,
-            liked: newLikedStatus,
-            stats: {
-              ...post.stats,
-              likes: newLikedStatus
-                ? post.stats.likes + 1
-                : post.stats.likes - 1,
-            },
-          };
-        }
-        return post;
-      })
+  const openComments = async (postId: string) => {
+    setActivePostId(postId);
+    try {
+      const commentsResponse = await commentsService.getComments(postId);
+      if (commentsResponse) {
+        setComments((prev) => ({
+          ...prev,
+          [postId]: commentsResponse,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      toast.error("Failed to load comments");
+    } finally {
+      setShowComments(true);
+    }
+  };
+
+  const toggleLike = async (postId: string) => {
+    try {
+      if (likedPosts[postId]) {
+        await postsService.unlikePost(postId);
+      } else {
+        await postsService.likePost(postId);
+      }
+      setLikedPosts((prev) => ({
+        ...prev,
+        [postId]: !prev[postId],
+      }));
+    } catch (error) {
+      console.error("Error liking/unliking post:", error);
+      toast.error("Failed to like/unlike post");
+    }
+  };
+
+  const toggleBookmark = async (postId: string) => {
+    try {
+      if (bookmarkedPosts[postId]) {
+        await postsService.removeBookmark(postId);
+      } else {
+        await postsService.addBookmark(postId);
+      }
+      setBookmarkedPosts((prev) => ({
+        ...prev,
+        [postId]: !prev[postId],
+      }));
+    } catch (error) {
+      console.error("Error bookmarking/unbookmarking post:", error);
+      toast.error("Failed to bookmark/unbookmark post");
+    }
+  };
+
+  const likeComment = async (commentId: string) => {
+    try {
+      if (likedComments[commentId]) {
+        await commentsService.unlikeComment(commentId);
+      } else {
+        await commentsService.likeComment(commentId);
+      }
+      setLikedComments((prev) => ({
+        ...prev,
+        [commentId]: !prev[commentId],
+      }));
+      if (activePostId) await openComments(activePostId);
+    } catch (error) {
+      console.error("Error liking/unliking comment:", error);
+      toast.error("Failed to like/unlike comment");
+    }
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || !activePostId || isSubmitting || !userId) return;
+
+    setIsSubmitting(true);
+    try {
+      await commentsService.createComment({ 
+        post_id: activePostId, 
+        text: newComment, 
+        user_id: userId 
+      });
+      setNewComment("");
+      await openComments(activePostId);
+      toast.success("Comment posted successfully");
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+      toast.error("Failed to post comment");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditComment = async () => {
+    if (!editingCommentId || !activePostId || !userId) return;
+
+    try {
+      await commentsService.updateComment(editingCommentId, {
+        post_id: activePostId,
+        text: editCommentText,
+        user_id: userId
+      });
+      
+      await openComments(activePostId);
+      setEditingCommentId(null);
+      setEditCommentText("");
+      toast.success("Comment updated successfully");
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      toast.error("Failed to update comment");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!activePostId) return;
+
+    try {
+      await commentsService.deleteComment(commentId);
+      await openComments(activePostId);
+      toast.success("Comment deleted successfully");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Failed to delete comment");
+    }
+  };
+
+  const renderCommentsModal = () => {
+    if (!showComments || !activePostId) return null;
+
+    const postComments = comments[activePostId] || [];
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Comments ({postComments.length})
+            </h3>
+            <button 
+              onClick={() => {
+                setShowComments(false);
+                setActivePostId(null);
+              }} 
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="p-4 space-y-4">
+            {postComments.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400">
+                No comments yet. Be the first to comment!
+              </p>
+            ) : (
+              postComments.map((comment) => (
+                <div 
+                  key={comment.id} 
+                  className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Image
+                        src={comment.users?.profile_picture || '/default-avatar.png'}
+                        alt={comment.users?.username || 'User'}
+                        width={32}
+                        height={32}
+                        className="rounded-full"
+                      />
+                      <div>
+                        <p className="font-semibold text-sm">
+                          {comment.users?.username || 'Anonymous'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatRelativeDate(comment.date)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {comment.user_id === userId && (
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => {
+                            setEditingCommentId(comment.id);
+                            setEditCommentText(comment.text);
+                          }}
+                          className="text-blue"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {editingCommentId === comment.id ? (
+                    <div className="mt-2">
+                      <textarea
+                        value={editCommentText}
+                        onChange={(e) => setEditCommentText(e.target.value)}
+                        className="w-full p-2 border rounded"
+                        rows={3}
+                      />
+                      <div className="flex justify-end space-x-2 mt-2">
+                        <button 
+                          onClick={() => {
+                            setEditingCommentId(null);
+                            setEditCommentText("");
+                          }}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleEditComment}
+                          className="bg-blue-500 text-white px-3 py-1 rounded"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-800 dark:text-gray-200">{comment.text}</p>
+                  )}
+
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                    <button 
+                      onClick={() => likeComment(comment.id)}
+                      className="flex items-center space-x-1"
+                    >
+                      <Heart 
+                        size={16} 
+                        className={`
+                          ${
+                            likedComments[comment.id] 
+                              ? 'text-red fill-red' 
+                              : 'text-gray-500'
+                          }
+                        `} 
+                      />
+                      <span>{comment.comment_likes?.[0]?.count || 0}</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <form onSubmit={handleSubmitComment} className="space-y-2">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment..."
+                className="w-full p-2 border rounded dark:bg-gray-700"
+                rows={3}
+                required
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Posting...' : 'Post Comment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     );
   };
 
+  if (loading) return <div>Loading...</div>;
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md py-3 border-b border-border animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">Bookmarks</h1>
+    <div className="space-y-4 relative">
+      {posts.length === 0 ? (
+        <div className="text-gray-500 text-center">No posts found.</div>
+      ) : (
+        posts.map((post) => (
+          <div key={post.id} className="post-card text-black dark:text-white animate-slide-up">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <Image
+                  src={post.users?.profile_picture || '/default-avatar.png'}
+                  alt={`User ${post.users?.username}`}
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              </div>
+
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold">{post.users?.username}</h3>
+                  <span className="text-gray text-sm">{formatRelativeDate(post.date)}</span>
+                </div>
+                <p className="mb-4">{post.text}</p>
+
+                {post.image && (
+                  <div className="mb-4 rounded-xl overflow-hidden">
+                    <Image
+                      width={300}
+                      height={300}
+                      src={post.image}
+                      alt="Post content"
+                      className="w-full h-auto object-cover rounded-xl shadow-sm transition-all duration-300 hover:shadow-md"
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-between text-gray">
+                  <button 
+                    className="flex items-center gap-1 group" 
+                    onClick={() => toggleLike(post.id)}
+                  >
+                    <Heart
+                      className={`h-5 w-5 transition-colors ${
+                        likedPosts[post.id] ? "text-red fill-red" : ""
+                      }`}
+                    />
+                    <span>{post.likes?.[0]?.count ?? 0}</span>
+                  </button>
+
+                  <button
+                    className="flex items-center gap-1 group"
+                    onClick={() => openComments(post.id)}
+                  >
+                    <MessageCircle className="h-5 w-5 group-hover:text-blue transition-colors" />
+                    <span>{post.comments?.[0]?.count ?? 0}</span>
+                  </button>
+
+                  <button className="flex items-center gap-1 group">
+                    <Repeat2 className="h-5 w-5 group-hover:text-green transition-colors" />
+                    <span>0</span>
+                  </button>
+
+                  <button
+                    className="flex items-center gap-1 group"
+                    onClick={() => toggleBookmark(post.id)}
+                  >
+                    <Bookmark
+                      className={`h-5 w-5 transition-colors ${
+                        bookmarkedPosts[post.id] ? "text-blue fill-blue" : ""
+                      }`}
+                    />
+                    <span>Save</span>
+                  </button>
+
+                  <button className="flex items-center gap-1 group">
+                    <Share2 className="h-5 w-5 group-hover:text-blue transition-colors" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </header>
+        ))
+      )}
 
-        <main className="mt-6 animate-slide-up">
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="all">All Bookmarks</TabsTrigger>
-              <TabsTrigger value="recent">Recently Added</TabsTrigger>
-            </TabsList>
-            <TabsContent value="all" className="mt-0">
-              {loading ? (
-                // Skeleton loading state
-                Array(3)
-                  .fill(0)
-                  .map((_, index) => (
-                    <Card key={index} className="mb-4 overflow-hidden p-4">
-                      <div className="flex items-start gap-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Skeleton className="h-4 w-24 mb-1" />
-                              <Skeleton className="h-3 w-16" />
-                            </div>
-                            <Skeleton className="h-6 w-6 rounded-full" />
-                          </div>
-                          <Skeleton className="h-4 w-full mt-3" />
-                          <Skeleton className="h-4 w-3/4 mt-2" />
-                          <Skeleton className="h-[150px] w-full mt-3 rounded-lg" />
-                          <div className="flex justify-between mt-4">
-                            <Skeleton className="h-6 w-20" />
-                            <Skeleton className="h-6 w-20" />
-                            <Skeleton className="h-6 w-20" />
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))
-              ) : bookmarkedPosts.length > 0 ? (
-                <div className="space-y-4">
-                  {bookmarkedPosts.map((post, index) => (
-                    <motion.div
-                      key={post.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                    >
-                      <Card className="overflow-hidden transition-all duration-300 hover:shadow-md relative group">
-                        <div className="absolute top-2 right-2 z-10">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="rounded-full bg-background/80 backdrop-blur-sm shadow-sm"
-                              onClick={() => handleRemoveBookmark(post.id)}
-                            >
-                              <BookmarkMinus className="h-4 w-4 mr-1 text-muted-foreground" />
-                              Remove
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                              <Image
-                                width={40}
-                                height={40}
-                                src={post.author.avatar}
-                                alt={post.author.name}
-                                className="object-cover transition-transform duration-300"
-                                loading="lazy"
-                              />
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="flex items-center gap-1">
-                                    <p className="font-semibold">
-                                      {post.author.name}
-                                    </p>
-                                    {post.author.verified && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="h-4 w-4 p-0 ml-0.5 bg-primary/10 text-primary"
-                                      >
-                                        <Check className="h-3 w-3" />
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-muted-foreground">
-                                    @{post.author.username} • {post.timestamp}
-                                  </p>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="rounded-full h-8 w-8"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              <p className="mt-2 text-balance">
-                                {post.content}
-                              </p>
-                              {post.image && (
-                                <div className="mt-3 rounded-lg overflow-hidden bg-muted">
-                                  <Image
-                                    width={300}
-                                    height={300}
-                                    src={post.image}
-                                    alt="Post attachment"
-                                    className="w-full h-auto object-cover transition-opacity duration-500 hover:opacity-95"
-                                    loading="lazy"
-                                  />
-                                </div>
-                              )}
-                              <div className="flex justify-between mt-4">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                >
-                                  <MessageCircle className="h-4 w-4 mr-1" />
-                                  <span>{post.stats.comments}</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-muted-foreground hover:text-green-500 hover:bg-green-500/10"
-                                >
-                                  <Repeat2 className="h-4 w-4 mr-1" />
-                                  <span>{post.stats.retweets}</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={`hover:bg-red-500/10 ${
-                                    post.liked
-                                      ? "text-red-500"
-                                      : "text-muted-foreground hover:text-red-500"
-                                  }`}
-                                  onClick={() => handleLike(post.id)}
-                                >
-                                  <Heart
-                                    className={`h-4 w-4 mr-1 ${
-                                      post.liked ? "fill-current" : ""
-                                    }`}
-                                  />
-                                  <span>{post.stats.likes}</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-primary fill-primary"
-                                  onClick={() => handleRemoveBookmark(post.id)}
-                                >
-                                  <Bookmark className="h-4 w-4 mr-1 fill-current" />
-                                </Button>
-                              </div>
-                              <div className="mt-3 pt-3 border-t border-border">
-                                <p className="text-xs text-muted-foreground">
-                                  Bookmarked: {post.bookmarkedOn}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <Bookmark className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-medium mb-2">No bookmarks yet</h3>
-                  <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-                    When you bookmark posts, they`ll appear here for easy access
-                    later.
-                  </p>
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="recent" className="mt-0">
-              {loading ? (
-                // Same skeleton as above
-                Array(3)
-                  .fill(0)
-                  .map((_, index) => (
-                    <Card key={index} className="mb-4 overflow-hidden p-4">
-                      <div className="flex items-start gap-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Skeleton className="h-4 w-24 mb-1" />
-                              <Skeleton className="h-3 w-16" />
-                            </div>
-                            <Skeleton className="h-6 w-6 rounded-full" />
-                          </div>
-                          <Skeleton className="h-4 w-full mt-3" />
-                          <Skeleton className="h-4 w-3/4 mt-2" />
-                          <Skeleton className="h-[150px] w-full mt-3 rounded-lg" />
-                          <div className="flex justify-between mt-4">
-                            <Skeleton className="h-6 w-20" />
-                            <Skeleton className="h-6 w-20" />
-                            <Skeleton className="h-6 w-20" />
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))
-              ) : (
-                <div className="space-y-4">
-                  {/* Filter to show only recent bookmarks (last 2 days) */}
-                  {bookmarkedPosts
-                    .filter(
-                      (post) =>
-                        post.bookmarkedOn.includes("Today") ||
-                        post.bookmarkedOn.includes("Yesterday")
-                    )
-                    .map((post, index) => (
-                      <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                      >
-                        <Card className="overflow-hidden transition-all duration-300 hover:shadow-md relative group">
-                          <div className="absolute top-2 right-2 z-10">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                className="rounded-full bg-background/80 backdrop-blur-sm shadow-sm"
-                                onClick={() => handleRemoveBookmark(post.id)}
-                              >
-                                <BookmarkMinus className="h-4 w-4 mr-1 text-muted-foreground" />
-                                Remove
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="p-4">
-                            <div className="flex items-start gap-3">
-                              <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                                <Image
-                                  width={40}
-                                  height={40}
-                                  src={post.author.avatar}
-                                  alt={post.author.name}
-                                  className="object-cover transition-transform duration-300"
-                                  loading="lazy"
-                                />
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="flex items-center gap-1">
-                                      <p className="font-semibold">
-                                        {post.author.name}
-                                      </p>
-                                      {post.author.verified && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="h-4 w-4 p-0 ml-0.5 bg-primary/10 text-primary"
-                                        >
-                                          <Check className="h-3 w-3" />
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">
-                                      @{post.author.username} • {post.timestamp}
-                                    </p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="rounded-full h-8 w-8"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                                <p className="mt-2 text-balance">
-                                  {post.content}
-                                </p>
-                                {post.image && (
-                                  <div className="mt-3 rounded-lg overflow-hidden bg-muted">
-                                    <Image
-                                      width={300}
-                                      height={300}
-                                      src={post.image}
-                                      alt="Post attachment"
-                                      className="w-full h-auto object-cover transition-opacity duration-500 hover:opacity-95"
-                                      loading="lazy"
-                                    />
-                                  </div>
-                                )}
-                                <div className="flex justify-between mt-4">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                  >
-                                    <MessageCircle className="h-4 w-4 mr-1" />
-                                    <span>{post.stats.comments}</span>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-muted-foreground hover:text-green-500 hover:bg-green-500/10"
-                                  >
-                                    <Repeat2 className="h-4 w-4 mr-1" />
-                                    <span>{post.stats.retweets}</span>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className={`hover:bg-red-500/10 ${
-                                      post.liked
-                                        ? "text-red-500"
-                                        : "text-muted-foreground hover:text-red-500"
-                                    }`}
-                                    onClick={() => handleLike(post.id)}
-                                  >
-                                    <Heart
-                                      className={`h-4 w-4 mr-1 ${
-                                        post.liked ? "fill-current" : ""
-                                      }`}
-                                    />
-                                    <span>{post.stats.likes}</span>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-primary fill-primary"
-                                    onClick={() =>
-                                      handleRemoveBookmark(post.id)
-                                    }
-                                  >
-                                    <Bookmark className="h-4 w-4 mr-1 fill-current" />
-                                  </Button>
-                                </div>
-                                <div className="mt-3 pt-3 border-t border-border">
-                                  <p className="text-xs text-muted-foreground">
-                                    Bookmarked: {post.bookmarkedOn}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  {bookmarkedPosts.filter(
-                    (post) =>
-                      post.bookmarkedOn.includes("Today") ||
-                      post.bookmarkedOn.includes("Yesterday")
-                  ).length === 0 && (
-                    <div className="text-center py-16">
-                      <Bookmark className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-xl font-medium mb-2">
-                        No recent bookmarks
-                      </h3>
-                      <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-                        You haven`t added any bookmarks in the last 48 hours.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </main>
-      </div>
-      <div className="fixed sm:left-1/3 bottom-5 sm:bottom-6">
-        <MenuSection />
-      </div>
+      {renderCommentsModal()}
     </div>
   );
 };
 
-export default BookmarksPage;
+export default Posts;
