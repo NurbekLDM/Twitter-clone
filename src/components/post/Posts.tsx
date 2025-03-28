@@ -5,22 +5,10 @@ import postsService from "@/actions/post.action";
 import commentsService, { Comment } from "@/actions/comment.action";
 import authService from "@/actions/user.action";
 import { toast } from "sonner";
-
-interface Post {
-  id: string;
-  text: string;
-  image?: string;
-  date: string;
-  users?: {
-    username: string;
-    profile_picture: string;
-  };
-  likes?: { count: number }[];
-  comments?: { count: number }[];
-}
+import { Post } from "@/types/posts";
 
 const Posts: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<Post[]|null>([]);
   const [loading, setLoading] = useState(true);
   const [likedPosts, setLikedPosts] = useState<{ [key: string]: boolean }>({});
   const [bookmarkedPosts, setBookmarkedPosts] = useState<{ [key: string]: boolean }>({});
@@ -34,29 +22,38 @@ const Posts: React.FC = () => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
 
+
+  const fetchPosts = async () => {
+    try{
+      const data = await postsService.getPosts();
+      console.log(data);
+      if (data?.data) { 
+        setPosts(data?.data || []);
+      }
+    }catch(error){
+      console.error("Error fetching posts:", error);
+      toast.error("Failed to load posts");
+    }
+  }
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch user
         const userResponse = await authService.getUser();
         console.log(userResponse);
-        if (userResponse) {
+        if (userResponse?.user) {
           setUserId(userResponse.user.id);
         }
 
-        // Fetch posts
-        const postsResponse = await postsService.getPosts();
-        if (postsResponse) {
-          setPosts(postsResponse);
-        }
+        await fetchPosts();
 
-        // Fetch liked posts
+        
         const likedResponse = await postsService.getUserLikedPosts();
         console.log(likedResponse);
         if (likedResponse.data) {
           const likedMap = likedResponse.data.reduce<{ [key: string]: boolean }>(
             (acc, post) => {
-              acc[post.post_id] = true;
+              acc[post.user_id] = true;
               return acc;
             },
             {}
@@ -68,8 +65,8 @@ const Posts: React.FC = () => {
         const bookmarkedResponse = await postsService.getUserBookmarkedPosts();
         if (bookmarkedResponse?.data) {
           const bookmarkedMap = bookmarkedResponse.data.reduce<{ [key: string]: boolean }>(
-            (acc, post) => {
-              acc[post.post_id] = true;
+            (acc) => {
+              return acc;
               return acc;
             },
             {}
@@ -87,78 +84,90 @@ const Posts: React.FC = () => {
 
     const fetchLikedComments = async () => {
       try {
-        const likedCommentsResponse = await commentsService.getUserLikedComments();
-        console.log('Liked comments: ',likedCommentsResponse);
-        if (likedCommentsResponse) {
-          const likedCommentsMap = likedCommentsResponse.reduce<{
-            [key: string]: boolean;
-          }>((acc, commentId) => {
-            acc[commentId] = true;
-            return acc;
-          }, {});
-          setLikedComments(likedCommentsMap);
-        }
+          const likedCommentsResponse = await commentsService.getUserLikedComments();
+          console.log('Liked comments: ', likedCommentsResponse);
+          if (likedCommentsResponse.data) { // Access .data and check it exists
+              const likedCommentsMap = likedCommentsResponse.data.reduce<{
+                  [key: string]: boolean;
+              }>((acc, commentId) => {
+                  acc[commentId] = true;
+                  return acc;
+              }, {});
+              setLikedComments(likedCommentsMap);
+          } else {
+              console.warn("No liked comments data:", likedCommentsResponse.message);
+              setLikedComments({}); // Fallback to empty map if no data
+          }
       } catch (error) {
-        console.error("Error fetching liked comments:", error);
+          console.error("Error fetching liked comments:", error);
       }
-    };
-    fetchLikedComments();
+  };
+  fetchLikedComments();
   }, []);
 
   
   const formatRelativeDate = (isoDate: number) => {
     const date = new Date(isoDate);
     const now = new Date();
-  
+
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
     if (diffInSeconds < 60 * 60 * 24) {
-      const options = {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Asia/Tashkent',
-      };
-      const formattedDate = new Intl.DateTimeFormat('uz-UZ', options).format(date);
-      const [hour, minute] = formattedDate.split(':');
-      const newHour = parseInt(hour) + 5;
-      const newMinute = minute;
-      return `${newHour.toString().padStart(2, '0')}:${newMinute}`;
+        const options = {
+            hour: '2-digit' as const,
+            minute: '2-digit' as const,
+            timeZone: 'Asia/Tashkent',
+        };
+        const formattedDate = new Intl.DateTimeFormat('uz-UZ', options).format(date);
+        const [hour, minute] = formattedDate.split(':');
+        const newHour = parseInt(hour) + 5;
+        const newMinute = minute;
+        return `${newHour.toString().padStart(2, '0')}:${newMinute}`;
     } else if (diffInSeconds < 60 * 60 * 48) {
-
-      return "yesterday";
+        return "yesterday";
     } else {
-
-      const options = {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      };
-      return new Intl.DateTimeFormat('uz-UZ', options).format(date);
+        const options = {
+            day: '2-digit' as const,
+            month: '2-digit' as const,
+            year: 'numeric' as const,
+        };
+        return new Intl.DateTimeFormat('uz-UZ', options).format(date);
     }
-  };
+};
 
-  const openComments = async (postId: string) => {
-    setActivePostId(postId);
-    try {
+const openComments = async (postId: string) => {
+  setActivePostId(postId);
+  try {
       const commentsResponse = await commentsService.getComments(postId);
-      if (commentsResponse) {
-        setComments((prev) => ({
-          ...prev,
-          [postId]: commentsResponse,
-        }));
+      if (commentsResponse.data) { 
+          setComments((prev) => ({
+              ...prev,
+              [postId]: commentsResponse.data || [], 
+          }));
+      } else {
+          console.warn("No comments data:", commentsResponse.message);
+          // Optionally set an empty array if no data
+          setComments((prev) => ({
+              ...prev,
+              [postId]: [],
+          }));
       }
-    } catch (error) {
+  } catch (error) {
       console.error("Error fetching comments:", error);
       toast.error("Failed to load comments");
-    } finally {
+  } finally {
       setShowComments(true);
-    }
-  };
+  }
+};
 
   const toggleLike = async (postId: string) => {
     try {
       if (likedPosts[postId]) {
         await postsService.unlikePost(postId);
+        setLikedPosts((prev) => ({
+          ...prev,
+          [postId]: !prev[postId],
+        }))
       } else {
         await postsService.likePost(postId);
       }
@@ -176,6 +185,10 @@ const Posts: React.FC = () => {
     try {
       if (bookmarkedPosts[postId]) {
         await postsService.removeBookmark(postId);
+        setBookmarkedPosts((prev) => ({
+          ...prev,
+          [postId]: !prev[postId],
+        }));
       } else {
         await postsService.addBookmark(postId);
       }
@@ -193,6 +206,11 @@ const Posts: React.FC = () => {
     try {
       if (likedComments[commentId]) {
         await commentsService.unlikeComment(commentId);
+        setLikedComments((prev) => ({
+          ...prev,
+          [commentId]: !prev[commentId],
+        }));
+  
       } else {
         await commentsService.likeComment(commentId);
       }
@@ -310,7 +328,7 @@ const Posts: React.FC = () => {
                           {comment.users?.username || 'Anonymous'}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {formatRelativeDate(comment.date)}
+                          {formatRelativeDate(new Date(comment.date).getTime())}
                         </p>
                       </div>
                     </div>
@@ -419,7 +437,7 @@ const Posts: React.FC = () => {
 
   return (
     <div className="space-y-4 relative">
-      {posts.length === 0 ? (
+      {(!posts || posts.length === 0) ? (
         <div className="text-gray-500 text-center">No posts found.</div>
       ) : (
         posts.map((post) => (
@@ -438,7 +456,7 @@ const Posts: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-bold">{post.users?.username}</h3>
-                  <span className="text-gray text-sm">{formatRelativeDate(post.date)}</span>
+                  <span className="text-gray text-sm">{formatRelativeDate(new Date(post.date).getTime())}</span>
                 </div>
                 <p className="mb-4">{post.text}</p>
 

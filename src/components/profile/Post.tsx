@@ -41,7 +41,9 @@ const Posts: React.FC = () => {
         const userResponse = await authService.getUser();
         console.log(userResponse);
         if (userResponse) {
-          setUserId(userResponse.user.id);
+          if (userResponse?.user?.id) {
+            setUserId(userResponse.user.id);
+          }
         }
 
         // Fetch posts
@@ -55,8 +57,7 @@ const Posts: React.FC = () => {
         console.log(likedResponse);
         if (likedResponse.data) {
           const likedMap = likedResponse.data.reduce<{ [key: string]: boolean }>(
-            (acc, post) => {
-              acc[post.post_id] = true;
+            (acc) => {
               return acc;
             },
             {}
@@ -68,8 +69,7 @@ const Posts: React.FC = () => {
         const bookmarkedResponse = await postsService.getUserBookmarkedPosts();
         if (bookmarkedResponse?.data) {
           const bookmarkedMap = bookmarkedResponse.data.reduce<{ [key: string]: boolean }>(
-            (acc, post) => {
-              acc[post.post_id] = true;
+            (acc) => {
               return acc;
             },
             {}
@@ -90,7 +90,7 @@ const Posts: React.FC = () => {
         const likedCommentsResponse = await commentsService.getUserLikedComments();
         console.log('Liked comments: ',likedCommentsResponse);
         if (likedCommentsResponse) {
-          const likedCommentsMap = likedCommentsResponse.reduce<{
+          const likedCommentsMap = (likedCommentsResponse.data ?? []).reduce<{
             [key: string]: boolean;
           }>((acc, commentId) => {
             acc[commentId] = true;
@@ -109,43 +109,45 @@ const Posts: React.FC = () => {
   const formatRelativeDate = (isoDate: number) => {
     const date = new Date(isoDate);
     const now = new Date();
-  
+
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
     if (diffInSeconds < 60 * 60 * 24) {
-      const options = {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Asia/Tashkent',
-      };
-      const formattedDate = new Intl.DateTimeFormat('uz-UZ', options).format(date);
-      const [hour, minute] = formattedDate.split(':');
-      const newHour = parseInt(hour) + 5;
-      const newMinute = minute;
-      return `${newHour.toString().padStart(2, '0')}:${newMinute}`;
+        const options = {
+            hour: '2-digit' as const,
+            minute: '2-digit' as const,
+            timeZone: 'Asia/Tashkent',
+        };
+        const formattedDate = new Intl.DateTimeFormat('uz-UZ', options).format(date);
+        const [hour, minute] = formattedDate.split(':');
+        const newHour = parseInt(hour) + 5;
+        const newMinute = minute;
+        return `${newHour.toString().padStart(2, '0')}:${newMinute}`;
     } else if (diffInSeconds < 60 * 60 * 48) {
-
-      return "yesterday";
+        return "yesterday";
     } else {
-
-      const options = {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      };
-      return new Intl.DateTimeFormat('uz-UZ', options).format(date);
+        const options = {
+            day: '2-digit' as const,
+            month: '2-digit' as const,
+            year: 'numeric' as const,
+        };
+        return new Intl.DateTimeFormat('uz-UZ', options).format(date);
     }
-  };
+};
 
   const openComments = async (postId: string) => {
     setActivePostId(postId);
     try {
       const commentsResponse = await commentsService.getComments(postId);
       if (commentsResponse) {
-        setComments((prev) => ({
-          ...prev,
-          [postId]: commentsResponse,
-        }));
+        if (Array.isArray(commentsResponse)) {
+          setComments((prev) => ({
+            ...prev,
+            [postId]: commentsResponse,
+          }));
+        } else {
+          console.error("Invalid comments response format:", commentsResponse);
+        }
       }
     } catch (error) {
       console.error("Error fetching comments:", error);
@@ -310,7 +312,7 @@ const Posts: React.FC = () => {
                           {comment.users?.username || 'Anonymous'}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {formatRelativeDate(comment.date)}
+                          {formatRelativeDate(new Date(comment.date).getTime())}
                         </p>
                       </div>
                     </div>
@@ -438,7 +440,7 @@ const Posts: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-bold">{post.users?.username}</h3>
-                  <span className="text-gray text-sm">{formatRelativeDate(post.date)}</span>
+                  <span className="text-gray text-sm">{formatRelativeDate(new Date(post.date).getTime())}</span>
                 </div>
                 <p className="mb-4">{post.text}</p>
 

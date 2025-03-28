@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Heart, MessageCircle, Share2, Repeat2, Bookmark, X, Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import postsService from "@/actions/post.action";
 import commentsService, { Comment } from "@/actions/comment.action";
 import authService from "@/actions/user.action";
+import MenuSection from "@/components/menu/menu";
 import { toast } from "sonner";
 
 interface Post {
@@ -32,20 +34,20 @@ const Posts: React.FC = () => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
   const [bookmarkedPosts, setBookmarkedPosts] = useState<{ [key: string]: boolean }>({});
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-
-        // Fetch posts
         const postsResponse = await postsService.getUserBookmarkedPosts();
+        console.log('Bookmarked posts',postsResponse.data);
         if (postsResponse) {
           setPosts(postsResponse.data);
         }
-
+        
         // Fetch liked posts
         const likedResponse = await postsService.getUserLikedPosts();
-        console.log(likedResponse);
+        console.log('User liked posts',likedResponse);
         if (likedResponse.data) {
           const likedMap = likedResponse.data.reduce<{ [key: string]: boolean }>(
             (acc, post) => {
@@ -78,6 +80,19 @@ const Posts: React.FC = () => {
     };
     fetchInitialData();
 
+    const fetchUserId = async () => {
+      try {
+        const userResponse = await authService.getUser();
+        console.log('User response: ',userResponse);
+        if (userResponse?.user) {
+          setUserId(userResponse.user.id);
+        }
+      } catch (error) {
+        console.error("Error fetching user ID:", error);
+      }
+    };
+     
+    fetchUserId();
     const fetchLikedComments = async () => {
       try {
         const likedCommentsResponse = await commentsService.getUserLikedComments();
@@ -134,6 +149,7 @@ const Posts: React.FC = () => {
     setActivePostId(postId);
     try {
       const commentsResponse = await commentsService.getComments(postId);
+      console.log('Comments response: ',commentsResponse);
       if (commentsResponse) {
         setComments((prev) => ({
           ...prev,
@@ -152,6 +168,10 @@ const Posts: React.FC = () => {
     try {
       if (likedPosts[postId]) {
         await postsService.unlikePost(postId);
+        setLikedPosts((prev) => ({
+          ...prev,
+          [postId]: !prev[postId],
+        }));
       } else {
         await postsService.likePost(postId);
       }
@@ -292,7 +312,7 @@ const Posts: React.FC = () => {
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center space-x-2">
                       <Image
-                        src={comment.users?.profile_picture || '/default-avatar.png'}
+                        src={comment.users?.profile_picture || ''}
                         alt={comment.users?.username || 'User'}
                         width={32}
                         height={32}
@@ -408,19 +428,25 @@ const Posts: React.FC = () => {
     );
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="text-center mt-20">Loading...</div>;
 
   return (
+    <div>
     <div className="space-y-4 relative">
       {posts.length === 0 ? (
-        <div className="text-gray-500 text-center">No posts found.</div>
+        <div className="flex flex-col gap-4 items-center">
+        <div className="text-gray-500 mt-20 text-center">No posts found.</div>
+        <Link className="px-4 py-2 mx-auto bg-blue rounded-full" href="/posts"> <a>Go to posts page</a></Link>
+        </div>
       ) : (
-        posts.map((post) => (
-          <div key={post.id} className="post-card text-black dark:text-white animate-slide-up">
+        <div className="text-center text-gray-500 mt-20">
+          <h1 className="text-lg">Bookmarked Posts</h1>
+        {posts.map((post) => (
+          <div key={post.id} className="post-card sm:mx-60 sm:mt-8 sm:my-24 text-black dark:text-white animate-slide-up">
             <div className="flex gap-4">
               <div className="flex-shrink-0">
                 <Image
-                  src={post.users?.profile_picture || '/default-avatar.png'}
+                  src={post.posts?.users.profile_picture || '/default-avatar.png'}
                   alt={`User ${post.users?.username}`}
                   width={48}
                   height={48}
@@ -430,17 +456,17 @@ const Posts: React.FC = () => {
 
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold">{post.users?.username}</h3>
-                  <span className="text-gray text-sm">{formatRelativeDate(post.date)}</span>
+                  <h3 className="font-bold">{post.posts.users?.username}</h3>
+                  <span className="text-gray text-sm">{formatRelativeDate(post.posts.date)}</span>
                 </div>
-                <p className="mb-4">{post.text}</p>
+                <p className="mb-4">{post.posts.text}</p>
 
-                {post.image && (
+                {post.posts.image && (
                   <div className="mb-4 rounded-xl overflow-hidden">
                     <Image
                       width={300}
                       height={300}
-                      src={post.image}
+                      src={post.posts?.image}
                       alt="Post content"
                       className="w-full h-auto object-cover rounded-xl shadow-sm transition-all duration-300 hover:shadow-md"
                     />
@@ -450,22 +476,22 @@ const Posts: React.FC = () => {
                 <div className="flex justify-between text-gray">
                   <button 
                     className="flex items-center gap-1 group" 
-                    onClick={() => toggleLike(post.id)}
+                    onClick={() => toggleLike(post.posts.id)}
                   >
                     <Heart
                       className={`h-5 w-5 transition-colors ${
-                        likedPosts[post.id] ? "text-red fill-red" : ""
+                        likedPosts[post.posts.id] ? "text-red fill-red" : ""
                       }`}
                     />
-                    <span>{post.likes?.[0]?.count ?? 0}</span>
+                    <span>{post.posts.likes?.[0]?.count ?? 0}</span>
                   </button>
 
                   <button
                     className="flex items-center gap-1 group"
-                    onClick={() => openComments(post.id)}
+                    onClick={() => openComments(post.post_id)}
                   >
                     <MessageCircle className="h-5 w-5 group-hover:text-blue transition-colors" />
-                    <span>{post.comments?.[0]?.count ?? 0}</span>
+                    <span>{post.posts.comments?.[0]?.count ?? 0}</span>
                   </button>
 
                   <button className="flex items-center gap-1 group">
@@ -475,11 +501,11 @@ const Posts: React.FC = () => {
 
                   <button
                     className="flex items-center gap-1 group"
-                    onClick={() => toggleBookmark(post.id)}
+                    onClick={() => toggleBookmark(post.post_id)}
                   >
                     <Bookmark
                       className={`h-5 w-5 transition-colors ${
-                        bookmarkedPosts[post.id] ? "text-blue fill-blue" : ""
+                        bookmarkedPosts[post.post_id] ? "text-blue fill-blue" : ""
                       }`}
                     />
                     <span>Save</span>
@@ -492,10 +518,17 @@ const Posts: React.FC = () => {
               </div>
             </div>
           </div>
-        ))
+        ))}
+        </div>
       )}
 
       {renderCommentsModal()}
+
+
+    </div>
+    <div className="fixed sm:left-1/3 bottom-5 sm:bottom-6">
+        <MenuSection />
+      </div>
     </div>
   );
 };

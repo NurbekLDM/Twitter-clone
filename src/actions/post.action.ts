@@ -1,16 +1,8 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
 import Cookies from "js-cookie";
+import { Post } from "@/types/posts";
 
 const API_URL = 'https://twitter-backend-lac-one.vercel.app/api/posts';
-
-export interface Post {
-    id: string;
-    user_id: string;
-    image: string;
-    text: string;
-    likes: number;
-    date: string;
-}
 
 interface ApiResponse<T> {
     data: T | null;
@@ -64,8 +56,8 @@ class PostService {
 
     public async getPosts(): Promise<ApiResponse<Post[]>> {
         try {
-            const response = await this.api.get<ApiResponse<Post[]>>('/');
-            return response.data;
+            const {data} = await this.api.get<ApiResponse<Post[]>>('/');
+            return data;
         } catch (error) {
             return this.handleError<Post[]>(error, 'An error occurred while fetching posts');
         }
@@ -100,11 +92,10 @@ class PostService {
 
     public async getUserBookmarkedPosts(): Promise<ApiResponse<[]>> {
         try {
-            const response = await this.api.get<ApiResponse<{ user_id: string }[]>>('/bookmarkedPosts');
-           
+            const response = await this.api.get<ApiResponse<[]>>('/bookmarkedPosts');
             return response.data;
         } catch (error) {
-            return this.handleError<{ user_id: string }[]>(error, "An error occurred while fetching bookmarked posts");
+            return this.handleError<[]>(error, "An error occurred while fetching bookmarked posts");
         }
     }
 

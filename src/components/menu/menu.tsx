@@ -8,7 +8,6 @@ import { IoHomeOutline, IoSettingsOutline, IoBookmarksOutline } from "react-icon
 import { FaRegCircleUser } from "react-icons/fa6";
 import { CiSquarePlus } from "react-icons/ci";
 import { PiArticle } from "react-icons/pi";
-import { VscHistory } from "react-icons/vsc";
 
 const menuItems = [
   { title: "Home", icon: <IoHomeOutline />, href: "/home" },
@@ -16,7 +15,6 @@ const menuItems = [
   { title: "Settings", icon: <IoSettingsOutline />, href: "/settings" },
   { title: "Create Post", icon: <CiSquarePlus />, href: "/create" },
   { title: "Posts", icon: <PiArticle />, href: "/posts" },
-  { title: "History", icon: <VscHistory />, href: "/history" },
   { title: "Bookmarks", icon: <IoBookmarksOutline />, href: "/bookmarks" },
 ];
 

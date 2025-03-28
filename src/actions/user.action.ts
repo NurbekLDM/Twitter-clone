@@ -4,15 +4,15 @@ import Cookies from "js-cookie";
 const API_URL = "https://twitter-backend-lac-one.vercel.app/api/users";
 
 export interface User {
-  id: string;
-  email: string;
-  username: string;
-  full_name: string;
-  profile_picture?: string;
-  provider?: string;
-  bio: string;
-  followers_count: number;
-  following_count: number;
+    id: string;
+    email: string;
+    username: string;
+    full_name: string;
+    profile_picture?: string;
+    provider?: string;
+    bio: string;
+    followers_count: number;
+    following_count: number;
 }
 
 interface UpdateProfilePayload {
@@ -37,6 +37,7 @@ export interface SocialLoginResponse {
 
 export interface ApiResponse<T> {
   message: string;
+  user?: User;
   data: T | null;
   error?: string;
   token?: string;
@@ -163,12 +164,12 @@ class AuthService {
     }
   }
 
-  public async followUser(payload: FollowPayload): Promise<ApiResponse<any>> {
+  public async followUser(payload: FollowPayload): Promise<ApiResponse<null>> {
     try {
-      const response: AxiosResponse<ApiResponse<any>> = await this.api.post("/follow", payload);
+      const response: AxiosResponse<ApiResponse<null>> = await this.api.post("/follow", payload);
       return response.data;
     } catch (error) {
-      return this.handleError<any>(error, "Failed to follow user");
+      return this.handleError<null>(error, "Failed to follow user");
     }
   }
 
@@ -181,16 +182,16 @@ class AuthService {
     }
   }
 
-  public async unfollowUser(payload: FollowPayload): Promise<ApiResponse<any>> {
+  public async unfollowUser(payload: FollowPayload): Promise<ApiResponse<null>> {
     try {
-      const response: AxiosResponse<ApiResponse<any>> = await this.api.post("/unfollow", payload, {
+      const response: AxiosResponse<ApiResponse<null>> = await this.api.post("/unfollow", payload, {
         headers: {
           "Content-Type": "application/json",
         },
       });
       return response.data;
     } catch (error) {
-      return this.handleError<any>(error, "Failed to unfollow user");
+      return this.handleError<null>(error, "Failed to unfollow user");
     }
   }
 
@@ -218,20 +219,20 @@ class AuthService {
       formData.append("full_name", payload.full_name);
       formData.append("username", payload.username);
       formData.append("bio", payload.bio || '');
-  
+
       if (payload.profile_picture) {
         formData.append("profile_picture", payload.profile_picture);
       }
 
       const token = Cookies.get("token");
-      
+
       const response: AxiosResponse<ApiResponse<User>> = await this.api.put(`/update`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           "Authorization": token,
         },
       });
-  
+
       return response.data;
     } catch (error) {
       return this.handleError<User>(error, "Profile update failed");
